@@ -1,0 +1,475 @@
+{
+  "topBar": {
+    "marquesina": "POLLO FIESTA S.A. | ¡Comprometidos con la Calidad, Bioseguridad y Bienestar de Nuestros Colaboradores! | Recordatorio: Jornada de Bioseguridad el 25 de Julio",
+    "rotationSpeed": 20,
+    "moduleOpacity": 0.55,
+    "theme": "halloween"
+  },
+  "workers": [],
+  "farms": [
+    {
+      "id": "f1",
+      "name": "Granja San Pedro",
+      "location": "Km 14 Vía Oriente",
+      "status": "Óptimo",
+      "birdsCount": 45000,
+      "temp": "24.5°C",
+      "humidity": "62%",
+      "batchAge": "5 Semanas",
+      "lastCheck": "Hace 10 min"
+    },
+    {
+      "id": "f2",
+      "name": "Granja El Sol",
+      "location": "Vereda El Carmen",
+      "status": "Óptimo",
+      "birdsCount": 38000,
+      "temp": "25.1°C",
+      "humidity": "58%",
+      "batchAge": "3 Semanas",
+      "lastCheck": "Hace 5 min"
+    },
+    {
+      "id": "f3",
+      "name": "Granja Los Olivos",
+      "location": "Sector La Palma",
+      "status": "Desinfección",
+      "birdsCount": 0,
+      "temp": "22.0°C",
+      "humidity": "55%",
+      "batchAge": "Sanitización",
+      "lastCheck": "Hace 1 hora"
+    },
+    {
+      "id": "f4",
+      "name": "Granja Santa Ana",
+      "location": "Km 8 Vía Norte",
+      "status": "Óptimo",
+      "birdsCount": 52000,
+      "temp": "24.0°C",
+      "humidity": "60%",
+      "batchAge": "6 Semanas",
+      "lastCheck": "Hace 15 min"
+    }
+  ],
+  "events": [
+    {
+      "id": "e_1785859693425",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "Normal",
+      "desc": "HALLOWEEN",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859701917-961200695.png"
+    },
+    {
+      "id": "e_1784909378913",
+      "title": "DIA DEL HOMBRE",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859480754-498852318.png"
+    },
+    {
+      "id": "e_1784909423237",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859490963-196164992.png"
+    },
+    {
+      "id": "e_1784909466075",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859498958-629465452.png"
+    },
+    {
+      "id": "e_1784909450317",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859506860-718275564.png"
+    },
+    {
+      "id": "e_1784909512726",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859514202-41692866.png"
+    },
+    {
+      "id": "e_1784909483399",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859522470-101147848.png"
+    },
+    {
+      "id": "e_1784909534556",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859530138-528060267.png"
+    },
+    {
+      "id": "e_1784909567186",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859541066-755488679.png"
+    },
+    {
+      "id": "e_1784909587086",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859551159-75598041.png"
+    },
+    {
+      "id": "e_1784909620078",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859564008-157744286.png"
+    },
+    {
+      "id": "e_1784909674880",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "Próximamente",
+      "category": "General",
+      "priority": "Normal",
+      "desc": "Descripción del evento.",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859574020-750156996.png"
+    },
+    {
+      "id": "e_1784909690125",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859589606-440754962.png"
+    },
+    {
+      "id": "e_1784909711341",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859615622-423009618.png"
+    },
+    {
+      "id": "e_1784909730652",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "",
+      "desc": "",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859623213-298360982.png"
+    }
+  ],
+  "titles": {
+    "appTitle": "POLLO FIESTA",
+    "appSubtitle": "cartelera digital",
+    "bdayTitle": "Cumpleaños!!",
+    "bdaySubtitle": "Mes Actual",
+    "farmsTitle": "Estado Operativo de Granjas Avícolas",
+    "eventsTitle": "Eventos",
+    "hrTitle": "Avisos Gestión Humana"
+  },
+  "tabLabels": {
+    "workers": "🎂 Cumpleaños",
+    "farms": "🏡 Granjas",
+    "events": "📅 Eventos"
+  },
+  "schema": {
+    "farms": [
+      {
+        "id": "birdsCount",
+        "label": "Aves",
+        "type": "number",
+        "icon": "🐥"
+      },
+      {
+        "id": "temp",
+        "label": "Temperatura",
+        "type": "text",
+        "icon": "🌡️"
+      },
+      {
+        "id": "humidity",
+        "label": "Humedad",
+        "type": "text",
+        "icon": "💧"
+      },
+      {
+        "id": "batchAge",
+        "label": "Edad Lote",
+        "type": "text",
+        "icon": "🐣"
+      }
+    ],
+    "events": [
+      {
+        "id": "date",
+        "label": "Fecha",
+        "type": "text",
+        "icon": "📅"
+      },
+      {
+        "id": "category",
+        "label": "Categoría",
+        "type": "text",
+        "icon": "🏷️"
+      },
+      {
+        "id": "priority",
+        "label": "Prioridad",
+        "type": "text",
+        "icon": "⚡"
+      }
+    ],
+    "workers": [
+      {
+        "id": "role",
+        "label": "Cargo",
+        "type": "text",
+        "icon": "💼"
+      },
+      {
+        "id": "department",
+        "label": "Departamento",
+        "type": "text",
+        "icon": "🏢"
+      },
+      {
+        "id": "birthdate",
+        "label": "Fecha / Detalle",
+        "type": "text",
+        "icon": "📅"
+      }
+    ]
+  },
+  "kpis": [
+    {
+      "id": "1",
+      "label": "SST",
+      "value": "120 Días Sin Accidente",
+      "icon": "🛡️",
+      "color": "emerald"
+    },
+    {
+      "id": "2",
+      "label": "Aves en Galpones",
+      "value": "40.000 Pollos",
+      "icon": "🐥",
+      "color": "amber"
+    },
+    {
+      "id": "3",
+      "label": "Cumplimiento Meta Mes",
+      "value": "96.4% Calidad",
+      "icon": "📊",
+      "color": "blue"
+    }
+  ],
+  "hrModule": [
+    {
+      "id": "hr_1785864543291",
+      "title": "Nuevo Aviso RRHH",
+      "desc": "Detalle de la comunicación",
+      "icon": "📌",
+      "type": "info"
+    },
+    {
+      "id": "hr_1785864525199",
+      "title": "NueAviso RRHH",
+      "desc": "Detalle de la comunicación",
+      "icon": "📌",
+      "type": "info"
+    },
+    {
+      "id": "hr_1785861357809",
+      "title": "Nuevo Aviso RRHH",
+      "desc": "Detalle de la comunicación",
+      "icon": "📌",
+      "type": "alert"
+    },
+    {
+      "id": "hr_1785848399453",
+      "title": "Nuevo Aviso RRHH",
+      "desc": "Detalle de la comunicación",
+      "icon": "📌",
+      "type": "info"
+    },
+    {
+      "id": "hr_1785860073725",
+      "title": "",
+      "desc": "Detalle de la comunicación",
+      "icon": "📌",
+      "type": "alert"
+    }
+  ],
+  "videos": [
+    {
+      "id": "v_1785860280612",
+      "url": "http://localhost:5000/uploads/1785860280538-446108370.mp4",
+      "name": "Download (4).mp4"
+    },
+    {
+      "id": "v_1785860274142",
+      "url": "http://localhost:5000/uploads/1785860274073-271007300.mp4",
+      "name": "Llega el fin de semana y nada mejor que disfrutar de unas listas BBQ o Parrilla 😋😎😃Pídelas a.mp4"
+    },
+    {
+      "id": "v_1785860268462",
+      "url": "http://localhost:5000/uploads/1785860268343-42066838.mp4",
+      "name": "¡Descubre el poder del pollo para levantar el ánimo! 🍗💫 ¡En nuestro video reel te mostramos có.mp4"
+    },
+    {
+      "id": "v_1785860254409",
+      "url": "http://localhost:5000/uploads/1785860254360-309048548.mp4",
+      "name": "Pollo entero Pollo Fiesta para mil preparaciones, encuéntralo en nuestros puntos de venta 🥳🍗😎.mp4"
+    },
+    {
+      "id": "v_1785860230428",
+      "url": "http://localhost:5000/uploads/1785860230391-135480237.mp4",
+      "name": "🎥🍗 Descubre todo lo que Pollo Fiesta tiene para ti 🍗🎥En cada momento, hay un producto perfec.mp4"
+    }
+  ],
+  "hseq": [
+    {
+      "id": "hs_1785930089273",
+      "title": "Nuevo Comunicado HSEQ",
+      "desc": "Descripción del protocolo o normativa...",
+      "icon": "🛡️",
+      "category": "Calidad",
+      "type": "warning",
+      "image": "http://localhost:5000/uploads/1785930272702-882283902.jpeg"
+    },
+    {
+      "id": "hs_1785930088959",
+      "title": "Nuevo Comunicado HSEQ",
+      "desc": "Descripción del protocolo o normativa...",
+      "icon": "🛡️",
+      "category": "Seguridad",
+      "type": "warning"
+    },
+    {
+      "id": "hs_1785863999180",
+      "title": "Nuevo Comunicado HSEQ",
+      "desc": "Descripción del protocolo o normativa...",
+      "icon": "🛡️",
+      "category": "Salud",
+      "type": "warning",
+      "image": "http://localhost:5000/uploads/1785865321089-691304678.png"
+    },
+    {
+      "id": "hs_1785268436100",
+      "title": "Nuevo Comunicado HSEQ",
+      "desc": "Descripción del protocolo o normativa...",
+      "icon": "🛡️",
+      "category": "Ambiental",
+      "type": "warning",
+      "image": null
+    }
+  ],
+  "convenios": [
+    {
+      "id": "c_1785860427630",
+      "title": "APRENDE CON UN EXPERTO",
+      "category": "COMPENSAR",
+      "discount": "Finanzas",
+      "description": "",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785860451031-439290676.jpeg"
+    },
+    {
+      "id": "c_1785860426735",
+      "title": "BENEFICIOS HOGAR",
+      "category": "Compensar",
+      "discount": "60% DTO",
+      "description": "Descripción detallada...",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785860837797-90194066.jpeg"
+    },
+    {
+      "id": "c_1785860425192",
+      "title": "MADRUGON OLIMPICA",
+      "category": "COMPENSAR",
+      "discount": "40% DTO",
+      "description": "Descripción detallada...",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785860931344-958871243.jpeg"
+    },
+    {
+      "id": "c_1785860424091",
+      "title": "UNIVERSIDAD COMPENSAR",
+      "category": "BECAS",
+      "discount": "",
+      "description": "Descripción detallada...",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785861006190-989990487.jpeg"
+    },
+    {
+      "id": "c_1785860422690",
+      "title": "CINE COLOMBIA",
+      "category": "PRIVILEGIOS",
+      "discount": "",
+      "description": "Descripción detallada...",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785861141728-558696691.jpeg"
+    },
+    {
+      "id": "c_1785860422109",
+      "title": "APRENDE CON UN EXPERTO",
+      "category": "COMPENSAR",
+      "discount": "Finanzas",
+      "description": "Descripción detallada...",
+      "color": "#E11D48",
+      "details": "",
+      "image": "http://localhost:5000/uploads/1785861183761-205228839.jpeg"
+    }
+  ]
+}

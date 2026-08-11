@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compilados
+dist/
+build/
+public/uploads/
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db
