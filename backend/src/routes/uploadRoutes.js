@@ -2,11 +2,20 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Configure multer storage
+const { isAzureStorageConfigured, uploadToBlob, deleteFromBlob } = require('../services/azureStorageService');
+const { processAndDownloadVideo } = require('../services/videoDownloaderService');
+const { compressAndOptimizeVideo } = require('../services/videoCompressorService');
+
+// Configure multer storage temporal
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../public/uploads/'));
+    const uploadDir = path.join(__dirname, '../../public/uploads/');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -26,9 +35,6 @@ const upload = multer({
   }
 });
 
-const { processAndDownloadVideo } = require('../services/videoDownloaderService');
-const { compressAndOptimizeVideo } = require('../services/videoCompressorService');
-
 // POST /api/upload/fetch-video - Descarga y optimiza cualquier video de link web
 router.post('/fetch-video', async (req, res) => {
   try {
@@ -40,9 +46,24 @@ router.post('/fetch-video', async (req, res) => {
     console.log(' [UploadRoutes] Recibida solicitud para procesar video:', url);
     const result = await processAndDownloadVideo(url);
     
+    // Si Azure Blob Storage está activo, subir el video descargado
+    if (isAzureStorageConfigured() && result.url && result.url.startsWith('/uploads/')) {
+      const localFilename = path.basename(result.url);
+      const localFilePath = path.join(__dirname, '../../public/uploads/', localFilename);
+      if (fs.existsSync(localFilePath)) {
+        try {
+          const blobUrl = await uploadToBlob(localFilePath, localFilename, 'video/mp4');
+          result.url = blobUrl;
+          console.log(' [UploadRoutes] Video web subido a Azure Blob Storage:', blobUrl);
+        } catch (blobErr) {
+          console.warn(' [UploadRoutes] Fallo al subir a Azure Blob, usando ruta local:', blobErr.message);
+        }
+      }
+    }
+    
     res.json({
       success: true,
-      message: 'Video procesado y almacenado correctamente en el servidor',
+      message: 'Video procesado y almacenado correctamente',
       data: result
     });
   } catch (error) {
@@ -55,7 +76,7 @@ router.post('/fetch-video', async (req, res) => {
   }
 });
 
-// POST /api/upload - Upload an image or video with automatic compression
+// POST /api/upload - Upload an image or video with automatic compression and Azure Storage support
 router.post('/', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -67,7 +88,18 @@ router.post('/', upload.single('file'), async (req, res) => {
     if (isVideo) {
       // Comprimir y optimizar video automáticamente con H.264 FastStart
       const compResult = await compressAndOptimizeVideo(req.file.path);
-      const fileUrl = `/uploads/${compResult.optimizedFilename}`;
+      let fileUrl = `/uploads/${compResult.optimizedFilename}`;
+      const optimizedFilePath = path.join(__dirname, '../../public/uploads/', compResult.optimizedFilename);
+      
+      // Subir a Azure Blob Storage si está configurado
+      if (isAzureStorageConfigured() && fs.existsSync(optimizedFilePath)) {
+        try {
+          fileUrl = await uploadToBlob(optimizedFilePath, compResult.optimizedFilename, 'video/mp4');
+          console.log(' [UploadRoutes] Video subido a Azure Blob Storage:', fileUrl);
+        } catch (blobErr) {
+          console.warn(' [UploadRoutes] Error subiendo video a Azure Blob:', blobErr.message);
+        }
+      }
       
       return res.status(201).json({
         success: true,
@@ -82,7 +114,19 @@ router.post('/', upload.single('file'), async (req, res) => {
       });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // Imagen
+    let fileUrl = `/uploads/${req.file.filename}`;
+    
+    // Subir a Azure Blob Storage si está configurado
+    if (isAzureStorageConfigured()) {
+      try {
+        fileUrl = await uploadToBlob(req.file.path, req.file.filename, req.file.mimetype);
+        console.log(' [UploadRoutes] Imagen subida a Azure Blob Storage:', fileUrl);
+      } catch (blobErr) {
+        console.warn(' [UploadRoutes] Error subiendo imagen a Azure Blob:', blobErr.message);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Archivo subido correctamente',
@@ -101,24 +145,14 @@ router.get('/download', async (req, res) => {
     if (!rawUrl) {
       return res.status(400).send('URL de archivo requerida');
     }
+    
+    // Si es una URL remota de Azure Blob u otro sitio web
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      return res.redirect(rawUrl);
+    }
+
     let fileName = path.basename(rawUrl.split('?')[0]);
     let filePath = path.join(__dirname, '../../public/uploads/', fileName);
-    
-    const fs = require('fs');
-    
-    // Si el archivo no existe localmente pero es un enlace externo (YouTube, etc.), procesarlo al vuelo
-    if (!fs.existsSync(filePath) && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))) {
-      try {
-        console.log(' [UploadRoutes/Download] Descargando video al vuelo:', rawUrl);
-        const result = await processAndDownloadVideo(rawUrl);
-        if (result && result.url && result.url.startsWith('/uploads/')) {
-          fileName = path.basename(result.url);
-          filePath = path.join(__dirname, '../../public/uploads/', fileName);
-        }
-      } catch (dlErr) {
-        console.error(' [UploadRoutes/Download] Error descargando al vuelo:', dlErr.message);
-      }
-    }
 
     if (fs.existsSync(filePath)) {
       const cleanCustomName = req.query.name 
@@ -134,22 +168,26 @@ router.get('/download', async (req, res) => {
 });
 
 // DELETE /api/upload - Delete an uploaded file
-router.delete('/', (req, res) => {
+router.delete('/', async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) {
       return res.status(400).json({ success: false, message: 'URL de archivo no proporcionada.' });
     }
-    const fileName = path.basename(url);
+
+    // Si es URL de Azure Blob Storage
+    if (isAzureStorageConfigured() && (url.startsWith('http://') || url.startsWith('https://'))) {
+      await deleteFromBlob(url);
+    }
+
+    const fileName = path.basename(url.split('?')[0]);
     const filePath = path.join(__dirname, '../../public/uploads/', fileName);
     
-    const fs = require('fs');
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      return res.json({ success: true, message: 'Archivo eliminado correctamente' });
-    } else {
-      return res.status(404).json({ success: false, message: 'Archivo no encontrado en el servidor' });
     }
+
+    return res.json({ success: true, message: 'Archivo eliminado correctamente' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error al eliminar el archivo', error: error.message });
   }
