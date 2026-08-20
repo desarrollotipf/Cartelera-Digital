@@ -21,11 +21,7 @@ connectDB();
 // CORS — permite peticiones desde orígenes locales y la URL de producción configurada en FRONTEND_URL
 const rawOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'http://localhost:3000',
   'https://carteleragh.pollo-fiesta.com',
-  'https://portal.pollo-fiesta.com',
   ...rawOrigins.map(url => url.trim().replace(/\/+$/, ''))
 ];
 
