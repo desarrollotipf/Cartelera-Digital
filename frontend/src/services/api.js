@@ -15,6 +15,7 @@ async function request(path, options = {}) {
 
 // Auth
 export const loginUser = (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
+export const redeemOtt = (data) => request('/auth/ott/redeem', { method: 'POST', body: JSON.stringify(data) });
 
 // Users
 export const getUsers = () => request('/users');

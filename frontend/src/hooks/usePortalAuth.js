@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { redeemOtt } from '../services/api';
 
-const PORTAL_BACKEND = import.meta.env.VITE_PORTAL_BACKEND_URL || 'https://portal-login-backend-d9hhdshme0hsagdc.brazilsouth-01.azurewebsites.net';
 const PORTAL_FRONTEND = import.meta.env.VITE_PORTAL_FRONTEND_URL || 'https://portal.pollo-fiesta.com';
 
 export function usePortalAuth() {
@@ -15,24 +15,14 @@ export function usePortalAuth() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   useEffect(() => {
-    // 1. Canjear OTT si viene en la URL (?userId=...&ott=...)
+    // 1. Canjear OTT enviándolo a NUESTRO Backend (?userId=...&ott=...)
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('userId');
     const ott = params.get('ott');
 
     if (userId && ott) {
       setIsAuthenticating(true);
-      fetch(`${PORTAL_BACKEND}/api/auth/ott/redeem`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: Number(userId), ott }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`Error en canje OTT: HTTP ${res.status}`);
-          }
-          return res.json();
-        })
+      redeemOtt({ userId: Number(userId), ott })
         .then((data) => {
           if (data.accessToken) {
             localStorage.setItem('token', data.accessToken);
@@ -49,7 +39,7 @@ export function usePortalAuth() {
           }
         })
         .catch((err) => {
-          console.error('No se pudo validar el OTT del Portal FIA:', err);
+          console.error('No se pudo validar el OTT a través de nuestro Backend:', err);
         })
         .finally(() => {
           setIsAuthenticating(false);

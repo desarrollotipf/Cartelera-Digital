@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { Op } = require('sequelize');
 const { isDbConnected } = require('../config/db');
+const axios = require('axios');
 
 const login = async (req, res) => {
   try {
@@ -32,7 +33,6 @@ const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'El usuario se encuentra inactivo' });
     }
 
-    // In a real app we'd use JWT, but for simplicity in this migration we just return the user object
     res.json({
       success: true,
       data: {
@@ -49,4 +49,40 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login };
+/**
+ * Canjear One-Time Token (OTT) llamando al Backend del Portal FIA
+ */
+const redeemOtt = async (req, res) => {
+  try {
+    const { userId, ott } = req.body;
+
+    if (!userId || !ott) {
+      return res.status(400).json({ success: false, message: 'userId y ott son requeridos' });
+    }
+
+    const portalUrl = process.env.PORTAL_BACKEND_URL || 'https://portal-login-backend-d9hhdshme0hsagdc.brazilsouth-01.azurewebsites.net';
+
+    // Llamar al Portal FIA para canjear el OTT
+    const response = await axios.post(`${portalUrl}/api/auth/ott/redeem`, {
+      userId: Number(userId),
+      ott
+    });
+
+    const { accessToken, refreshToken, user } = response.data;
+
+    return res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user,
+      message: 'Token OTT canjeado y validado exitosamente'
+    });
+  } catch (error) {
+    const status = error.response ? error.response.status : 500;
+    const message = error.response?.data?.message || error.message || 'Error validando OTT con el Portal FIA';
+    return res.status(status).json({ success: false, message });
+  }
+};
+
+module.exports = { login, redeemOtt };
+
