@@ -17,6 +17,9 @@ const externalRoutes = require('./routes/externalRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Confianza en el proxy de Azure App Service
+app.set('trust proxy', 1);
+
 // Inicializar conexión a la base de datos
 connectDB();
 
