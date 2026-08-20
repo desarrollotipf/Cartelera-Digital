@@ -51,6 +51,16 @@ app.use('/api/cumpleanos', cumpleanosRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/external', externalRoutes);
 
+// Ruta raíz para verificación de estado en Azure
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'API Cartelera Gestión Humana Pollo Fiesta en línea',
+    dbConnected: isDbConnected(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({

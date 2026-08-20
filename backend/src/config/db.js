@@ -1,22 +1,51 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const dbUrl = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/avisoGestionHumana?schema=cartelera_rrhh';
+function buildSequelizeInstance() {
+  const schema = process.env.DB_SCHEMA || 'cartelera_rrhh';
 
-const sequelize = new Sequelize(dbUrl, {
-  logging: false,
-  define: {
-    schema: 'cartelera_rrhh' // Forzar a Sequelize a crear/buscar tablas en este esquema
-  },
-  dialectOptions: {
-    prependSearchPath: true,
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
+  // Opción 1: DATABASE_URL completa
+  if (process.env.DATABASE_URL) {
+    return new Sequelize(process.env.DATABASE_URL, {
+      logging: false,
+      define: { schema },
+      dialectOptions: {
+        prependSearchPath: true,
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      }
+    });
   }
-});
 
+  // Opción 2: Variables individuales (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD)
+  const host = process.env.DB_HOST || 'localhost';
+  const port = process.env.DB_PORT || 5432;
+  const database = process.env.DB_NAME || 'pf_operacional';
+  const username = process.env.DB_USER || 'postgres';
+  const password = process.env.DB_PASSWORD || 'postgres';
+  const isCloudHost = host.includes('azure.com') || process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true';
+
+  return new Sequelize(database, username, password, {
+    host,
+    port,
+    dialect: 'postgres',
+    logging: false,
+    define: { schema },
+    dialectOptions: isCloudHost ? {
+      prependSearchPath: true,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {
+      prependSearchPath: true
+    }
+  });
+}
+
+const sequelize = buildSequelizeInstance();
 let isConnected = false;
 
 const connectDB = async () => {
