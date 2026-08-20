@@ -28,7 +28,7 @@ const VideosModule = ({
 
   const handleVideoEnded = React.useCallback(() => {
     // Si el editor está abierto o en modo vista previa, rotar solo dentro de videos sin salir
-    if (isEditorOpen || isLivePreview) {
+    if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       if (validVideos.length > 1) {
         setIsDeckTransitioning(true);
         setVideoIndex((videoIndex + 1) % validVideos.length);
@@ -131,7 +131,7 @@ const VideosModule = ({
   }, [handleVideoEnded, markVideoAsFailed, validVideos, videoIndex]);
 
   useEffect(() => {
-    if (isEditorOpen) return;
+    if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
     if (validVideos.length === 0) {
       if (isTVMode) {
         const timer = setTimeout(() => goToStep(6), 2000);

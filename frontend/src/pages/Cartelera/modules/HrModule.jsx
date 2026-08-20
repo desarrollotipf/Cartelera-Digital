@@ -37,7 +37,6 @@ const HrModule = ({
         const hrCount = (data?.hrModule || []).length;
 
         let gCols = 'repeat(3, 1fr)';
-        let gRows = 'auto';
 
         if (hrCount === 1) {
           gCols = '1fr';
@@ -48,23 +47,33 @@ const HrModule = ({
         return (
           <div className="hr-stage-grid" ref={hrGridRef} style={{
             gridTemplateColumns: gCols,
-            gridAutoRows: 'minmax(450px, 1fr)',
-            alignItems: 'stretch'
+            alignItems: 'start',
+            gap: '1.5rem',
+            width: '100%',
+            overflowY: 'auto'
           }}>
             {[...(data?.hrModule || [])]
               .sort((a, b) => (b.type === 'alert' ? 1 : 0) - (a.type === 'alert' ? 1 : 0))
               .map((item, i) => {
               const isAlert = item.type === 'alert';
               const isFeatured = isAlert;
-              let gCol = 'auto', gRow = 'auto';
+              const hasImage = Boolean(item.image);
 
               return (
-                <div key={item.id || i} style={{ gridColumn: gCol, gridRow: gRow, display: 'flex', flexDirection: 'column', minHeight: '450px' }}>
+                <div 
+                  key={item.id || i} 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    height: hasImage ? '100%' : 'fit-content',
+                    minHeight: hasImage ? '420px' : 'auto'
+                  }}
+                >
                   <motion.div
                     layout
                     className={`canva-interactive-element ${String(selectedElementId) === String(item.id || i) ? 'canva-interactive-selected' : ''}`}
                     animate={{ 
-                      scale: String(selectedElementId) === String(item.id || i) ? 1.15 : 1, 
+                      scale: String(selectedElementId) === String(item.id || i) ? 1.08 : 1, 
                       zIndex: String(selectedElementId) === String(item.id || i) ? 9999 : 1 
                     }}
                     transition={{ type: "spring", stiffness: 300, damping: 24 }}
@@ -74,35 +83,63 @@ const HrModule = ({
                         onElementClick('hr', item.id || i);
                       }
                     }}
-                    style={{ flex: 1, display: 'flex', flexDirection: 'column', cursor: onElementClick ? 'pointer' : 'default', height: '100%' }}
+                    style={{ 
+                      flex: hasImage ? 1 : 'initial', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      cursor: onElementClick ? 'pointer' : 'default', 
+                      height: hasImage ? '100%' : 'fit-content' 
+                    }}
                   >
-                    <div id={`hr-card-${item.id || i}`} className="hr-stage-card stagger-card-pop" style={{ '--idx': i, height: '100%', width: '100%', flex: 1 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
-                          <div className="hr-icon-circle" style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '12px', background: 'rgba(225, 29, 72, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div 
+                      id={`hr-card-${item.id || i}`} 
+                      className={`hr-stage-card stagger-card-pop ${hasImage ? 'hr-card-with-image' : 'hr-card-text-only'}`} 
+                      style={{ 
+                        '--idx': i, 
+                        height: hasImage ? '100%' : 'fit-content', 
+                        width: '100%', 
+                        flex: hasImage ? 1 : 'initial',
+                        padding: hasImage ? '1.75rem' : '1.35rem 1.6rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: hasImage ? '100%' : 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: hasImage ? '0.75rem' : '0.4rem' }}>
+                          <div className="hr-icon-circle" style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: '12px', background: 'rgba(225, 29, 72, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Pin size={24} color="#e11d48" strokeWidth={2.3} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: isFeatured ? '1.7rem' : '1.4rem', fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word', transition: 'font-size 0.3s ease' }}>{item.title}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Comunicado HR</span>
+                            <div style={{ fontSize: isFeatured ? '1.5rem' : (hasImage ? '1.35rem' : '1.25rem'), fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                              {item.title}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Comunicado HR</span>
                               <span style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                                padding: '0.18rem 0.65rem', borderRadius: '999px',
+                                fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                                padding: '0.15rem 0.55rem', borderRadius: '999px',
                                 background: item.type === 'alert' ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
                                 color: item.type === 'alert' ? '#ef4444' : '#22c55e',
                                 border: `1px solid ${item.type === 'alert' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'}`,
                               }}>
-                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'currentColor', display: 'inline-block', flexShrink: 0 }} />
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', display: 'inline-block', flexShrink: 0 }} />
                                 {item.type === 'alert' ? 'Alerta' : 'General'}
                               </span>
                             </div>
-                            {item.desc && <p style={{ color: 'var(--text-secondary)', fontSize: isFeatured ? '1.25rem' : '1.1rem', lineHeight: 1.6, margin: '0', flex: 1, whiteSpace: 'pre-wrap' }}>{item.desc}</p>}
+                            {item.desc && (
+                              <p style={{ 
+                                color: 'var(--text-secondary)', 
+                                fontSize: hasImage ? '1.05rem' : '1.15rem', 
+                                lineHeight: 1.55, 
+                                margin: '0', 
+                                whiteSpace: 'pre-wrap' 
+                              }}>
+                                {item.desc}
+                              </p>
+                            )}
                           </div>
                         </div>
-                        {item.image && (
-                          <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '12px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', backgroundColor: 'transparent', flex: 1, minHeight: 0 }}>
+                        {hasImage && (
+                          <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '12px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', backgroundColor: 'transparent', flex: 1, minHeight: '180px' }}>
                             <img src={item.image} alt="HR Adjunto" style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'top' }} loading="lazy" />
                           </div>
                         )}

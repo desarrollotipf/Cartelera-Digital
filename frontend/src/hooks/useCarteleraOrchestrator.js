@@ -47,7 +47,8 @@ export function useCarteleraOrchestrator(
   }, [overrideStep]);
 
   const goToStep = useCallback((nextStep) => {
-    if (isEditorOpenRef.current) return;
+    // En modo editor o previsualización en vivo, la rotación está 100% bloqueada
+    if (isEditorOpenRef.current || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
 
     const curData = dataRef.current;
     const curBirthdays = birthdaysRef.current;
@@ -149,7 +150,7 @@ export function useCarteleraOrchestrator(
 
   // --- MÁQUINA DE ESTADOS ESCÉNICA (5 MÓDULOS PROTAGONISTAS CON FLOWING MENU) ---
   useEffect(() => {
-    if (isEditorOpen || transitioningToStep !== null || isLivePreview || !isTVMode) return;
+    if (isEditorOpen || transitioningToStep !== null || isLivePreview || !isTVMode || (overrideStep !== null && overrideStep !== undefined)) return;
 
     let timeoutId;
     let intervalId;
