@@ -1,4 +1,4 @@
-const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
+const { BlobServiceClient, StorageSharedKeyCredential, generateBlobSASQueryParameters, BlobSASPermissions } = require('@azure/storage-blob');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -6,12 +6,26 @@ require('dotenv').config();
 let blobServiceClient = null;
 const containerName = process.env.AZURE_STORAGE_CONTAINER || 'archivo-digital';
 
+function getAccountAndKey() {
+  let account = process.env.AZURE_STORAGE_ACCOUNT;
+  let key = process.env.AZURE_STORAGE_KEY;
+
+  if (!account || !key) {
+    const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING || '';
+    const matchAccount = connStr.match(/AccountName=([^;]+)/);
+    const matchKey = connStr.match(/AccountKey=([^;]+)/);
+    if (matchAccount) account = matchAccount[1];
+    if (matchKey) key = matchKey[1];
+  }
+
+  return { account, key };
+}
+
 function getBlobServiceClient() {
   if (blobServiceClient) return blobServiceClient;
 
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const account = process.env.AZURE_STORAGE_ACCOUNT;
-  const key = process.env.AZURE_STORAGE_KEY;
+  const { account, key } = getAccountAndKey();
 
   if (connectionString) {
     blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
@@ -24,7 +38,39 @@ function getBlobServiceClient() {
 }
 
 function isAzureStorageConfigured() {
-  return !!(process.env.AZURE_STORAGE_CONNECTION_STRING || (process.env.AZURE_STORAGE_ACCOUNT && process.env.AZURE_STORAGE_KEY));
+  const { account, key } = getAccountAndKey();
+  return !!(process.env.AZURE_STORAGE_CONNECTION_STRING || (account && key));
+}
+
+/**
+ * Genera una URL con firma SAS para permitir la visualización de imágenes/videos 
+ * cuando la cuenta de almacenamiento tiene el acceso público anónimo deshabilitado.
+ */
+function generateSasUrl(blobName) {
+  const { account, key } = getAccountAndKey();
+  if (!account || !key) return null;
+
+  try {
+    const credential = new StorageSharedKeyCredential(account, key);
+    const startsOn = new Date();
+    startsOn.setMinutes(startsOn.getMinutes() - 5); // Tolerar diferencias de reloj
+
+    const expiresOn = new Date();
+    expiresOn.setFullYear(expiresOn.getFullYear() + 5); // 5 años de vigencia
+
+    const sasToken = generateBlobSASQueryParameters({
+      containerName,
+      blobName,
+      permissions: BlobSASPermissions.parse('r'), // Solo lectura
+      startsOn,
+      expiresOn
+    }, credential).toString();
+
+    return `https://${account}.blob.core.windows.net/${containerName}/${blobName}?${sasToken}`;
+  } catch (err) {
+    console.warn(' [AzureStorage] No se pudo generar token SAS, usando URL base:', err.message);
+    return `https://${account}.blob.core.windows.net/${containerName}/${blobName}`;
+  }
 }
 
 /**
@@ -32,7 +78,7 @@ function isAzureStorageConfigured() {
  * @param {string} localFilePath Ruta local del archivo
  * @param {string} destinationFileName Nombre del archivo en el Blob
  * @param {string} mimeType Tipo MIME (image/png, video/mp4, etc.)
- * @returns {Promise<string>} URL pública del blob subido
+ * @returns {Promise<string>} URL accesible del blob subido
  */
 async function uploadToBlob(localFilePath, destinationFileName, mimeType) {
   const client = getBlobServiceClient();
@@ -42,13 +88,12 @@ async function uploadToBlob(localFilePath, destinationFileName, mimeType) {
 
   const containerClient = client.getContainerClient(containerName);
   
-  // Asegurar que el contenedor exista con acceso público a nivel de blob si es nuevo
-  await containerClient.createIfNotExists({ access: 'blob' });
+  // Asegurar que el contenedor exista sin forzar acceso público anónimo a nivel de cuenta
+  await containerClient.createIfNotExists();
 
   const blockBlobClient = containerClient.getBlockBlobClient(destinationFileName);
 
   const fileStream = fs.createReadStream(localFilePath);
-  const fileSize = fs.statSync(localFilePath).size;
 
   await blockBlobClient.uploadStream(fileStream, 4 * 1024 * 1024, 5, {
     blobHTTPHeaders: {
@@ -56,7 +101,9 @@ async function uploadToBlob(localFilePath, destinationFileName, mimeType) {
     }
   });
 
-  return blockBlobClient.url;
+  // Generar URL con SAS token para visualización segura en navegadores
+  const sasUrl = generateSasUrl(destinationFileName);
+  return sasUrl || blockBlobClient.url;
 }
 
 /**
@@ -72,8 +119,9 @@ async function deleteFromBlob(fileUrl) {
 
     const containerClient = client.getContainerClient(containerName);
     
-    // Extraer el nombre del blob si viene como URL
-    const blobName = fileUrl.includes('/') ? path.basename(new URL(fileUrl).pathname) : fileUrl;
+    // Extraer el nombre limpio del blob (sin query params SAS)
+    const cleanUrl = fileUrl.split('?')[0];
+    const blobName = cleanUrl.includes('/') ? path.basename(new URL(cleanUrl).pathname) : cleanUrl;
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
     
     await blockBlobClient.deleteIfExists();
