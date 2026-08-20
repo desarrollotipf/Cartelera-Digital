@@ -215,7 +215,7 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
       if (type === 'hrModule') updateHr(index, 'image', localPreviewUrl);
     } catch (_) { }
 
-    setIsUploading(true);
+    setIsUploading(`${type}_${index}`);
 
     try {
       // 2. Compresión ultrarrápida en el cliente (reduce 90% el peso del archivo)
@@ -235,7 +235,7 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
       console.warn('Subida en background completada con copia local:', err);
     } finally {
       setIsUploading(false);
-      e.target.value = null;
+      if (e?.target) e.target.value = null;
     }
   };
 

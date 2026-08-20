@@ -30,7 +30,7 @@ export default function HrPanel({ form, addHrItem, updateHr, handleItemImageUplo
             {hr.image && <img src={hr.image} alt="Afiche HR" style={{ width: 42, height: 42, borderRadius: 6, objectFit: 'cover', border: '1px solid #fda4af' }} />}
             <label className="canva-btn canva-btn-secondary" style={{ flex: 1, fontSize: '0.78rem', height: 32, justifyContent: 'center' }}>
               <Image size={15} style={{ marginRight: 6 }} />
-              {isUploading ? 'Subiendo...' : (hr.image ? 'Cambiar Imagen' : 'Subir Imagen (Opcional)')}
+              {isUploading === `hrModule_${i}` ? 'Subiendo...' : (hr.image ? 'Cambiar Imagen' : 'Subir Imagen (Opcional)')}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleItemImageUpload(e, 'hrModule', i)} />
             </label>
             {hr.image && <button className="canva-icon-btn" onClick={() => updateHr(i, 'image', null)} title="Quitar imagen"><X size={16} /></button>}

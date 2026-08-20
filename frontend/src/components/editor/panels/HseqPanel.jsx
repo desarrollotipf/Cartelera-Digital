@@ -33,7 +33,7 @@ export default function HseqPanel({ form, addHseqItem, updateHseq, handleItemIma
             {hs.image && <img src={hs.image} alt="Afiche HSEQ" style={{ width: 42, height: 42, borderRadius: 6, objectFit: 'cover', border: '1px solid #10b981' }} />}
             <label className="canva-btn canva-btn-secondary" style={{ flex: 1, fontSize: '0.78rem', height: 32, justifyContent: 'center' }}>
               <Image size={15} style={{ marginRight: 6 }} />
-              {isUploading ? 'Subiendo...' : (hs.image ? 'Cambiar Imagen' : 'Subir Imagen (Opcional)')}
+              {isUploading === `hseq_${i}` ? 'Subiendo...' : (hs.image ? 'Cambiar Imagen' : 'Subir Imagen (Opcional)')}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleItemImageUpload(e, 'hseq', i)} />
             </label>
             {hs.image && <button className="canva-icon-btn" onClick={() => updateHseq(i, 'image', null)} title="Quitar imagen"><X size={16} /></button>}

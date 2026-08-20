@@ -78,7 +78,7 @@ export const getWeather = () => request('/external/weather');
 export const getDollarRate = () => request('/external/dollar');
 export const getNews = () => request('/external/news');
 
-// Upload (imagen o video) con subida directa a Azure Blob Storage y fallback seguro
+// Upload (imagen o video) con subida directa a Azure Blob Storage, timeout estricto y fallback seguro
 export const uploadFile = async (file) => {
   const base = getApiBase();
   
@@ -86,17 +86,21 @@ export const uploadFile = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
     const res = await fetch(`${base}/upload`, {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     
     const text = await res.text();
     let data = null;
     try {
       data = JSON.parse(text);
     } catch (_) {
-      // Si el servidor backend responde con HTML o error, activar fallback a base64
       console.warn(' [Upload] Respuesta no JSON de backend, usando almacenamiento local seguro.');
       const base64 = await fileToBase64(file);
       return {
@@ -110,10 +114,10 @@ export const uploadFile = async (file) => {
       return data;
     }
   } catch (err) {
-    console.warn(' [Upload] Excepción en subida de red:', err.message);
+    console.warn(' [Upload] Timeout o error en subida:', err.message);
   }
 
-  // Fallback seguro a base64 Data URL: garantiza que NUNCA falle la carga de imágenes en el editor
+  // Fallback seguro a base64 Data URL: garantiza que NUNCA se quede colgado
   try {
     const base64 = await fileToBase64(file);
     return {
@@ -122,7 +126,7 @@ export const uploadFile = async (file) => {
       data: { url: base64, type: file.type?.startsWith('video/') ? 'video' : 'image' }
     };
   } catch (base64Err) {
-    throw new Error('No se pudo leer el archivo seleccionado.');
+    throw new Error('No se pudo procesar el archivo seleccionado.');
   }
 };
 
