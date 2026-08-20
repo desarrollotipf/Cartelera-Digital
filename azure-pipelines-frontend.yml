@@ -68,7 +68,7 @@ stages:
             displayName: 'Desplegar App Service Frontend'
             inputs:
               ConnectionType: 'AzureRM'
-              azureSubscription: 'auditoria-app' # Service Connection en Azure DevOps
+              azureSubscription: 'cartelera-connection' # Service Connection en Azure DevOps
               appType: 'webAppLinux'
               WebAppName: '$(appServiceName)'
               packageForLinux: '$(Pipeline.Workspace)/drop/frontend.zip'
