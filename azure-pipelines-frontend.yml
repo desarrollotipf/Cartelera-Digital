@@ -3,13 +3,11 @@ trigger:
     include:
       - main
       - master
-  paths:
-    include:
-      - frontend/**
 
 variables:
   vmImageName: 'ubuntu-latest'
-  appServiceName: 'carteleragh-front' # Ajustar al nombre del App Service en Azure
+  appServiceName: 'carteleragh-front'
+  VITE_API_URL: 'https://carteleragh-back-d3c9gcd6cpf3fggv.brazilsouth-01.azurewebsites.net'
 
 stages:
 - stage: Build
