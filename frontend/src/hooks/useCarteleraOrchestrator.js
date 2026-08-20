@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useCarteleraOrchestrator(
   data, 
@@ -7,8 +7,8 @@ export function useCarteleraOrchestrator(
   isLivePreview, 
   overrideStep, 
   selectedElementId, 
-  birthdays, 
-  weeklyBirthdays,
+  birthdays = [], 
+  weeklyBirthdays = [],
   setNewsIndex
 ) {
   const [currentStep, setCurrentStep] = useState(overrideStep !== null && overrideStep !== undefined ? overrideStep : 0);
@@ -24,6 +24,21 @@ export function useCarteleraOrchestrator(
 
   const flowingTimeoutRef = useRef(null);
 
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const birthdaysRef = useRef(birthdays);
+  birthdaysRef.current = birthdays;
+
+  const weeklyBirthdaysRef = useRef(weeklyBirthdays);
+  weeklyBirthdaysRef.current = weeklyBirthdays;
+
+  const isEditorOpenRef = useRef(isEditorOpen);
+  isEditorOpenRef.current = isEditorOpen;
+
+  const currentStepRef = useRef(currentStep);
+  currentStepRef.current = currentStep;
+
   useEffect(() => {
     if (overrideStep !== null && overrideStep !== undefined) {
       setCurrentStep(overrideStep);
@@ -31,8 +46,12 @@ export function useCarteleraOrchestrator(
     }
   }, [overrideStep]);
 
-  const goToStep = (nextStep) => {
-    if (isEditorOpen) return;
+  const goToStep = useCallback((nextStep) => {
+    if (isEditorOpenRef.current) return;
+
+    const curData = dataRef.current;
+    const curBirthdays = birthdaysRef.current;
+    const curWeekly = weeklyBirthdaysRef.current;
 
     let targetStep = nextStep;
     let attempts = 0;
@@ -40,43 +59,44 @@ export function useCarteleraOrchestrator(
       if (targetStep > 6) targetStep = 0;
 
       let isValid = true;
-      if (targetStep === 0) isValid = (data?.events?.length || 0) > 0;
-      else if (targetStep === 1) isValid = (data?.hrModule?.length || 0) > 0;
-      else if (targetStep === 2) isValid = birthdays.length > 0 || weeklyBirthdays.length > 0;
-      else if (targetStep === 3) isValid = (data?.hseq?.length || 0) > 0;
-      else if (targetStep === 4) isValid = true; // Always valid
-      else if (targetStep === 5) isValid = (data?.videos?.length || 0) > 0;
-      else if (targetStep === 6) isValid = true; // Always valid para ver la data por defecto
+      if (targetStep === 0) isValid = (curData?.events?.length || 0) > 0;
+      else if (targetStep === 1) isValid = (curData?.hrModule?.length || 0) > 0;
+      else if (targetStep === 2) isValid = curBirthdays.length > 0 || curWeekly.length > 0;
+      else if (targetStep === 3) isValid = (curData?.hseq?.length || 0) > 0;
+      else if (targetStep === 4) isValid = true; // Clima / Noticias
+      else if (targetStep === 5) isValid = (curData?.videos?.length || 0) > 0;
+      else if (targetStep === 6) isValid = (curData?.convenios?.length || 0) > 0;
 
       if (isValid) break;
       targetStep++;
       attempts++;
     }
-    if (attempts >= 7) targetStep = 4; // Fallback
+    if (attempts >= 7) targetStep = 4; // Fallback seguro
 
-    if (targetStep === currentStep && transitioningToStep === null) return;
+    const fromStep = currentStepRef.current;
+    if (targetStep === fromStep) return;
 
     setTransitioningToStep(targetStep);
-    setFlowingActiveIdx(currentStep);
-    setMenuHighlightIdx(currentStep);
+    setFlowingActiveIdx(fromStep);
+    setMenuHighlightIdx(fromStep);
 
     if (flowingTimeoutRef.current) clearTimeout(flowingTimeoutRef.current);
     flowingTimeoutRef.current = setTimeout(() => {
       setFlowingActiveIdx(targetStep);
 
-      // Background cambia exactamente en el impacto del clic (1350ms de animación)
+      // Background cambia al impacto del clic (1350ms)
       setTimeout(() => {
         setMenuHighlightIdx(targetStep);
         setCurrentStep(targetStep);
       }, 1350);
 
-      // El menú desaparece cuando la onda ya se ha expandido (1950ms)
+      // El menú de transición concluye
       setTimeout(() => {
         setTransitioningToStep(null);
       }, 1950);
 
     }, 800);
-  };
+  }, []);
 
   useEffect(() => {
     if (isEditorOpen) {

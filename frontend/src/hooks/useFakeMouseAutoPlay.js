@@ -22,134 +22,175 @@ export function useFakeMouseAutoPlay({
     ripple: false
   });
 
+  // Guardar callbacks y referencias en refs estables para evitar re-ejecuciones y cancelaciones indeseadas
+  const goToStepRef = useRef(goToStep);
+  goToStepRef.current = goToStep;
+
+  const setHrModalRef = useRef(setSelectedHr);
+  setHrModalRef.current = setSelectedHr;
+
+  const setHseqModalRef = useRef(setSelectedHseq);
+  setHseqModalRef.current = setSelectedHseq;
+
   const hseqRef = useRef(hseqItems);
+  hseqRef.current = hseqItems;
+
   const hrRef = useRef(hrItems);
+  hrRef.current = hrItems;
 
+  // 1. Autoplay para Avisos de Gestión Humana (Paso 1)
   useEffect(() => {
-    hseqRef.current = hseqItems;
-  }, [hseqItems]);
-
-  useEffect(() => {
-    hrRef.current = hrItems;
-  }, [hrItems]);
-
-  // Autoplay para HSEQ (Paso 3)
-  useEffect(() => {
-    if (currentStep !== 3 || !isTVMode || isLivePreview) return;
-    const items = hseqRef.current;
-    if (items.length === 0) {
-      if (overrideStep !== 3) goToStep(4);
+    if (currentStep !== 1 || !isTVMode || isLivePreview) {
+      setFakeMouse(prev => ({ ...prev, visible: false }));
       return;
     }
 
-    let isActive = true;
-    let currentIndex = 0;
+    let isMounted = true;
 
-    const playNext = async () => {
-      if (!isActive) return;
-      const currentList = hseqRef.current;
+    const runHrSequence = async () => {
+      // Esperar que la animación de entrada del paso 1 se complete
+      await new Promise(r => setTimeout(r, 1200));
+      if (!isMounted) return;
 
-      if (currentIndex >= currentList.length) {
-        setFakeMouse(prev => ({ ...prev, visible: false }));
-        if (overrideStep !== 3) goToStep(4);
+      const items = hrRef.current || [];
+      if (items.length === 0) {
+        if (overrideStep !== 1) goToStepRef.current(2);
         return;
       }
 
-      const current = currentList[currentIndex];
-      const elId = `hseq-card-${current.id || currentIndex}`;
-      const el = document.getElementById(elId);
+      for (let i = 0; i < items.length; i++) {
+        if (!isMounted) return;
+        const current = items[i];
+        const elId = `hr-card-${current.id || i}`;
+        let el = document.getElementById(elId);
 
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await new Promise(r => setTimeout(r, 600));
-        if (!isActive) return;
+        // Si no lo encuentra por ID exacto, buscar por clase
+        if (!el) {
+          const allCards = document.querySelectorAll('.hr-stage-card');
+          if (allCards[i]) el = allCards[i];
+        }
 
-        const rect = el.getBoundingClientRect();
-        setFakeMouse({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, visible: true, clicking: false, ripple: false });
-        await new Promise(r => setTimeout(r, 600));
-        if (!isActive) return;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const targetX = rect.left + rect.width / 2;
+          const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-        setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-        await new Promise(r => setTimeout(r, 150));
-        setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
+          // 1. Mover cursor hacia la tarjeta
+          setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
+          await new Promise(r => setTimeout(r, 900));
+          if (!isMounted) return;
 
-        if (setSelectedHseq) setSelectedHseq(current);
-        await new Promise(r => setTimeout(r, 4000));
-        if (!isActive) return;
+          // 2. Efecto de Clic (Ripple)
+          setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
+          await new Promise(r => setTimeout(r, 180));
+          if (!isMounted) return;
+          setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-        if (setSelectedHseq) setSelectedHseq(null);
+          // 3. Abrir Modal de detalle
+          if (setHrModalRef.current) setHrModalRef.current(current);
+          await new Promise(r => setTimeout(r, 3800));
+          if (!isMounted) return;
+
+          // 4. Cerrar Modal
+          if (setHrModalRef.current) setHrModalRef.current(null);
+          await new Promise(r => setTimeout(r, 700));
+          if (!isMounted) return;
+        }
       }
 
-      await new Promise(r => setTimeout(r, 600));
-      currentIndex++;
-      playNext();
+      // Ocultar cursor y avanzar al Paso 2 (Cumpleaños)
+      setFakeMouse(prev => ({ ...prev, visible: false }));
+      await new Promise(r => setTimeout(r, 400));
+      if (!isMounted) return;
+
+      if (overrideStep !== 1) {
+        goToStepRef.current(2);
+      }
     };
 
-    const timer = setTimeout(() => { playNext(); }, 1500);
+    runHrSequence();
+
     return () => {
-      isActive = false;
-      clearTimeout(timer);
+      isMounted = false;
+      if (setHrModalRef.current) setHrModalRef.current(null);
     };
-  }, [currentStep, isTVMode, isLivePreview, overrideStep, goToStep, setSelectedHseq]);
+  }, [currentStep, isTVMode, isLivePreview, overrideStep]);
 
-  // Autoplay para HR (Paso 1)
+  // 2. Autoplay para Normas HSEQ (Paso 3)
   useEffect(() => {
-    if (currentStep !== 1 || !isTVMode || isLivePreview) return;
-    const items = hrRef.current;
-    if (items.length === 0) {
-      if (overrideStep !== 1) goToStep(2);
+    if (currentStep !== 3 || !isTVMode || isLivePreview) {
       return;
     }
 
-    let isActive = true;
-    let currentIndex = 0;
+    let isMounted = true;
 
-    const playNext = async () => {
-      if (!isActive) return;
-      const currentList = hrRef.current;
+    const runHseqSequence = async () => {
+      // Esperar que la animación de entrada se complete
+      await new Promise(r => setTimeout(r, 1200));
+      if (!isMounted) return;
 
-      if (currentIndex >= currentList.length) {
-        setFakeMouse(prev => ({ ...prev, visible: false }));
-        if (overrideStep !== 1) goToStep(2);
+      const items = hseqRef.current || [];
+      if (items.length === 0) {
+        if (overrideStep !== 3) goToStepRef.current(4);
         return;
       }
 
-      const current = currentList[currentIndex];
-      const elId = `hr-card-${current.id || currentIndex}`;
-      const el = document.getElementById(elId);
+      for (let i = 0; i < items.length; i++) {
+        if (!isMounted) return;
+        const current = items[i];
+        const elId = `hseq-card-${current.id || i}`;
+        let el = document.getElementById(elId);
 
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await new Promise(r => setTimeout(r, 600));
-        if (!isActive) return;
+        if (!el) {
+          const allCards = document.querySelectorAll('.kpi-stage-card');
+          if (allCards[i]) el = allCards[i];
+        }
 
-        const rect = el.getBoundingClientRect();
-        setFakeMouse({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, visible: true, clicking: false, ripple: false });
-        await new Promise(r => setTimeout(r, 600));
-        if (!isActive) return;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const targetX = rect.left + rect.width / 2;
+          const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-        setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-        await new Promise(r => setTimeout(r, 150));
-        setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
+          // 1. Mover cursor hacia la tarjeta
+          setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
+          await new Promise(r => setTimeout(r, 900));
+          if (!isMounted) return;
 
-        if (setSelectedHr) setSelectedHr(current);
-        await new Promise(r => setTimeout(r, 4500));
-        if (!isActive) return;
+          // 2. Efecto de Clic
+          setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
+          await new Promise(r => setTimeout(r, 180));
+          if (!isMounted) return;
+          setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-        if (setSelectedHr) setSelectedHr(null);
+          // 3. Abrir Modal HSEQ
+          if (setHseqModalRef.current) setHseqModalRef.current(current);
+          await new Promise(r => setTimeout(r, 3800));
+          if (!isMounted) return;
+
+          // 4. Cerrar Modal
+          if (setHseqModalRef.current) setHseqModalRef.current(null);
+          await new Promise(r => setTimeout(r, 700));
+          if (!isMounted) return;
+        }
       }
 
-      await new Promise(r => setTimeout(r, 500));
-      currentIndex++;
-      playNext();
+      // Ocultar cursor y avanzar al Paso 4 (Clima y Noticias)
+      setFakeMouse(prev => ({ ...prev, visible: false }));
+      await new Promise(r => setTimeout(r, 400));
+      if (!isMounted) return;
+
+      if (overrideStep !== 3) {
+        goToStepRef.current(4);
+      }
     };
 
-    const timer = setTimeout(() => { playNext(); }, 1500);
+    runHseqSequence();
+
     return () => {
-      isActive = false;
-      clearTimeout(timer);
+      isMounted = false;
+      if (setHseqModalRef.current) setHseqModalRef.current(null);
     };
-  }, [currentStep, isTVMode, isLivePreview, overrideStep, goToStep, setSelectedHr]);
+  }, [currentStep, isTVMode, isLivePreview, overrideStep]);
 
   return {
     fakeMouse,
