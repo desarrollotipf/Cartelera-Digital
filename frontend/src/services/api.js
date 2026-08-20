@@ -1,5 +1,12 @@
-// API client - All requests go through Vite proxy or VITE_API_URL in production
-const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+// API client - Resuelve automáticamente a carteleragh-back en producción o usa Vite proxy en desarrollo
+const isProdHost = typeof window !== 'undefined' && (
+  window.location.hostname.includes('pollo-fiesta.com') || 
+  window.location.hostname.includes('azurewebsites.net')
+);
+
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api` 
+  : (isProdHost ? 'https://carteleragh-back.azurewebsites.net/api' : '/api');
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
