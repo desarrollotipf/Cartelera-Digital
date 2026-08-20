@@ -1,23 +1,41 @@
-// API client - Resuelve automáticamente a carteleragh-back en producción o usa Vite proxy en desarrollo
-const isProdHost = typeof window !== 'undefined' && (
-  window.location.hostname.includes('pollo-fiesta.com') || 
-  window.location.hostname.includes('azurewebsites.net')
-);
+// API client - Resuelve automáticamente al backend en producción o usa Vite proxy en desarrollo
+export const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api`;
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('pollo-fiesta.com') || hostname.includes('azurewebsites.net')) {
+      return 'https://carteleragh-back.azurewebsites.net/api';
+    }
+  }
+  return '/api';
+};
 
-const API_BASE = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api` 
-  : (isProdHost ? 'https://carteleragh-back.azurewebsites.net/api' : '/api');
+const API_BASE = getApiBase();
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const base = getApiBase();
+  const res = await fetch(`${base}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `HTTP ${res.status}`);
+  
+  const text = await res.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    if (text.includes('<!doctype') || text.includes('<html')) {
+      throw new Error(`El servidor respondió con HTML en vez de JSON. Endpoint: ${base}${path}`);
+    }
+    throw new Error(text || `HTTP ${res.status}`);
   }
-  return res.json();
+
+  if (!res.ok || (data && data.success === false)) {
+    throw new Error(data?.message || `HTTP ${res.status}`);
+  }
+  return data;
 }
 
 // Auth
@@ -49,16 +67,27 @@ export const uploadFile = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await fetch(`${API_BASE}/upload`, {
+  const base = getApiBase();
+  const res = await fetch(`${base}/upload`, {
     method: 'POST',
     body: formData
   });
   
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `HTTP ${res.status}`);
+  const text = await res.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    if (text.includes('<!doctype') || text.includes('<html')) {
+      throw new Error(`El servidor respondió con HTML en vez de la API. Verifica que ${base}/upload esté accesible.`);
+    }
+    throw new Error(text || `Error HTTP ${res.status}`);
   }
-  return res.json();
+
+  if (!res.ok || (data && data.success === false)) {
+    throw new Error(data?.message || `HTTP ${res.status}`);
+  }
+  return data;
 };
 
 // Legacy alias
@@ -66,16 +95,25 @@ export const uploadImage = uploadFile;
 
 // Delete an uploaded file
 export const deleteFile = async (url) => {
-  const res = await fetch(`${API_BASE}/upload`, {
+  const base = getApiBase();
+  const res = await fetch(`${base}/upload`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `HTTP ${res.status}`);
+  
+  const text = await res.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    throw new Error(text || `HTTP ${res.status}`);
   }
-  return res.json();
+
+  if (!res.ok || (data && data.success === false)) {
+    throw new Error(data?.message || `HTTP ${res.status}`);
+  }
+  return data;
 };
 
 // Descargar y procesar video web automáticamente para reproducción local sin restricciones
@@ -83,4 +121,3 @@ export const fetchAndStoreVideo = (url) => request('/upload/fetch-video', {
   method: 'POST',
   body: JSON.stringify({ url })
 });
-

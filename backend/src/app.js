@@ -41,7 +41,13 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     const cleanOrigin = origin ? origin.replace(/\/+$/, '') : origin;
-    if (!cleanOrigin || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
+    if (
+      !cleanOrigin || 
+      allowedOrigins.includes(cleanOrigin) || 
+      cleanOrigin.endsWith('.pollo-fiesta.com') || 
+      cleanOrigin === 'https://pollo-fiesta.com' ||
+      process.env.NODE_ENV !== 'production'
+    ) {
       return callback(null, true);
     }
     return callback(new Error(`Bloqueado por política CORS: origen ${origin} no permitido.`));
