@@ -30,16 +30,26 @@ app.use(helmet({
   contentSecurityPolicy: false // Delegado al gateway o front para no romper assets de Azure Blob / CDNs
 }));
 
-// 2. CORS — permite peticiones desde orígenes locales y producción
+// 2. CORS — configuración estricta por entorno
+const isProd = process.env.NODE_ENV === 'production';
 const rawOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
+
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'http://localhost:3000',
   'https://carteleragh.pollo-fiesta.com',
   'https://portal.pollo-fiesta.com',
   ...rawOrigins.map(url => url.trim().replace(/\/+$/, ''))
 ];
+
+// Solo permitir orígenes localhost en desarrollo local
+if (!isProd) {
+  allowedOrigins.push(
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000'
+  );
+}
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -49,7 +59,7 @@ app.use(cors({
       allowedOrigins.includes(cleanOrigin) || 
       cleanOrigin.endsWith('.pollo-fiesta.com') || 
       cleanOrigin === 'https://pollo-fiesta.com' ||
-      process.env.NODE_ENV !== 'production'
+      !isProd
     ) {
       return callback(null, true);
     }
