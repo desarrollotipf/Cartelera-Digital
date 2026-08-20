@@ -162,14 +162,14 @@ let defaultData = {
       title: "Actualización Política de Vacaciones",
       type: "general",
       desc: "Recuerda que ahora puedes solicitar tus vacaciones a través del nuevo portal de autogestión de RRHH.",
-      icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+      icon: "📌"
     },
     {
       id: "hr_2",
       title: "¡Bono de Productividad Q3!",
       type: "alert",
       desc: "Felicitaciones a todos por alcanzar la meta trimestral. El bono será depositado en la próxima quincena.",
-      icon: "https://cdn-icons-png.flaticon.com/512/2933/2933116.png"
+      icon: "📌"
     }
   ],
   videos: [
