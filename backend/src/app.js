@@ -19,16 +19,20 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // CORS — permite peticiones desde orígenes locales y la URL de producción configurada en FRONTEND_URL
+const rawOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
   'http://localhost:3000',
-  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [])
+  'https://carteleragh.pollo-fiesta.com',
+  'https://portal.pollo-fiesta.com',
+  ...rawOrigins.map(url => url.trim().replace(/\/+$/, ''))
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    const cleanOrigin = origin ? origin.replace(/\/+$/, '') : origin;
+    if (!cleanOrigin || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
     return callback(new Error(`Bloqueado por política CORS: origen ${origin} no permitido.`));
