@@ -72,3 +72,4 @@ stages:
               appType: 'webAppLinux'
               WebAppName: '$(appServiceName)'
               packageForLinux: '$(Pipeline.Workspace)/drop/frontend.zip'
+              StartupCommand: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
