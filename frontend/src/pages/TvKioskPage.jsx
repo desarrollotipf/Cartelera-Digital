@@ -1,5 +1,5 @@
 import CarteleraPage from './CarteleraPage';
 
 export default function TvKioskPage() {
-  return <CarteleraPage isTVMode={true} overrideStep={0} />;
+  return <CarteleraPage isTVMode={true} />;
 }

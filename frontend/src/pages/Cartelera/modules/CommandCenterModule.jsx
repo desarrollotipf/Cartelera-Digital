@@ -72,7 +72,9 @@ const CommandCenterModule = ({
                       <MapPin size={18} color="#f43f5e" /> Bogotá, Colombia
                     </div>
                     <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.8rem 1.2rem', borderRadius: 'var(--radius-lg)', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}>
-                      <Wind size={18} color="#38bdf8" /> Viento: {weather.windspeed} km/h
+                      <Wind size={18} color="#38bdf8" /> {weather.windspeed} km/h
+                      <span style={{ margin: '0 0.5rem', color: 'var(--border)' }}>|</span>
+                      <CloudRain size={18} color="#38bdf8" /> Prob. Lluvia: {weather.probLluvia !== undefined ? `${weather.probLluvia}%` : 'N/A'}
                     </div>
                   </div>
                 </div>

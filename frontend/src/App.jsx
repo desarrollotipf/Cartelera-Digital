@@ -20,7 +20,7 @@ function AppRoutes() {
   const title = PAGE_TITLES[location.pathname] || 'Gestión Humana';
 
   // TV Kiosk: standalone page without layout
-  if (location.pathname === '/cartelera/tv') {
+  if (location.pathname === '/cartelera/tv' || location.pathname === '/tv') {
     return (
       <div style={{ padding: 0, margin: 0, width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: "#F0F4FA url('/images/fondo-pantalla.png') center/100% 100% fixed no-repeat" }}>
         <TvKioskPage />

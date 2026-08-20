@@ -66,3 +66,10 @@ export const deleteFile = async (url) => {
   }
   return res.json();
 };
+
+// Descargar y procesar video web automáticamente para reproducción local sin restricciones
+export const fetchAndStoreVideo = (url) => request('/upload/fetch-video', {
+  method: 'POST',
+  body: JSON.stringify({ url })
+});
+

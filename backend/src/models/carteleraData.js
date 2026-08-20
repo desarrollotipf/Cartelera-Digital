@@ -155,6 +155,37 @@ let defaultData = {
       icon: "🌱",
       type: "success"
     }
+  ],
+  hrModule: [
+    {
+      id: "hr_1",
+      title: "Actualización Política de Vacaciones",
+      type: "general",
+      desc: "Recuerda que ahora puedes solicitar tus vacaciones a través del nuevo portal de autogestión de RRHH.",
+      icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+    },
+    {
+      id: "hr_2",
+      title: "¡Bono de Productividad Q3!",
+      type: "alert",
+      desc: "Felicitaciones a todos por alcanzar la meta trimestral. El bono será depositado en la próxima quincena.",
+      icon: "https://cdn-icons-png.flaticon.com/512/2933/2933116.png"
+    }
+  ],
+  videos: [
+    {
+      id: "v_1",
+      name: "Cultura Pollo Fiesta",
+      url: "https://www.w3schools.com/html/mov_bbb.mp4"
+    }
+  ],
+  convenios: [
+    {
+      id: "c_1",
+      title: "Gimnasio SmartFit",
+      category: "Salud",
+      desc: "Descuento del 20% en mensualidades presentando tu carnet corporativo."
+    }
   ]
 };
 
@@ -163,18 +194,28 @@ module.exports = {
   getData: async () => {
     try {
       let config = await CarteleraConfig.findByPk(1);
-      
+
       // Si no existe, inicializar en BD con defaultData
       if (!config) {
         config = await CarteleraConfig.create({ id: 1, data: defaultData });
       }
-      
+
       let store = config.data || defaultData;
-      if (!store.hseq) {
-        store.hseq = defaultData.hseq;
+      let updated = false;
+
+      // Patch old database structures to ensure all default modules exist
+      const keysToPatch = ['hseq', 'hrModule', 'videos', 'convenios', 'events'];
+      for (const key of keysToPatch) {
+        if (!store[key]) {
+          store[key] = defaultData[key];
+          updated = true;
+        }
+      }
+
+      if (updated) {
         await CarteleraConfig.update({ data: store }, { where: { id: 1 } });
       }
-      
+
       return store;
     } catch (error) {
       console.error("Error reading cartelera from Postgres:", error);
@@ -191,7 +232,7 @@ module.exports = {
       }
 
       const currentData = config.data;
-      
+
       // Detect removed files to delete them from the uploads folder
       const oldDataStr = JSON.stringify(currentData);
       const newDataStr = JSON.stringify(newData);
@@ -224,7 +265,7 @@ module.exports = {
       const mergedData = { ...currentData, ...newData };
       config.data = mergedData;
       await config.save();
-      
+
       return mergedData;
     } catch (error) {
       console.error("Error updating cartelera in Postgres:", error);

@@ -166,7 +166,7 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
             const distance = targetTop - startTop;
 
             if (Math.abs(distance) > 5) {
-              const duration = 2500;
+              const duration = 2000;
               const startTime = Date.now();
               await new Promise(resolve => {
                 const animateScroll = () => {
@@ -184,15 +184,15 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
           }
         } else {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 800));
         }
 
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 800));
         if (!isActive) return;
 
         const rect = el.getBoundingClientRect();
         setFakeMouse({ x: rect.left + rect.width / 2, y: rect.top + 80, visible: true, clicking: false, ripple: false });
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1000));
         if (!isActive) return;
 
         setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
@@ -201,7 +201,7 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
 
         setSelectedHseq(current);
 
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 500));
         if (!isActive) return;
 
         const centerX = window.innerWidth / 2;
@@ -212,10 +212,12 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
         if (modalEl) {
           const maxScroll = modalEl.scrollHeight - modalEl.clientHeight;
           if (maxScroll > 10) {
-            await new Promise(r => setTimeout(r, 2000));
+            // Pausa inicial para leer el título (+0.2 más ágil)
+            await new Promise(r => setTimeout(r, 2200));
             if (!isActive) return;
 
-            const duration = 4000 + (maxScroll * 2);
+            // Scroll +0.2 más rápido y fluido
+            const duration = 7200 + (maxScroll * 9.5);
             const startTime = Date.now();
             await new Promise(resolve => {
               const animateScroll = () => {
@@ -229,12 +231,13 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
               };
               requestAnimationFrame(animateScroll);
             });
+            // Pausa al final
             await new Promise(r => setTimeout(r, 2500));
           } else {
-            await new Promise(r => setTimeout(r, 6000));
+            await new Promise(r => setTimeout(r, 5800));
           }
         } else {
-          await new Promise(r => setTimeout(r, 6000));
+          await new Promise(r => setTimeout(r, 5800));
         }
 
         if (!isActive) return;
@@ -243,7 +246,7 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
         if (closeBtn) {
           const cRect = closeBtn.getBoundingClientRect();
           setFakeMouse({ x: cRect.left + cRect.width / 2 - 4, y: cRect.top + cRect.height / 2 - 4, visible: true, clicking: false, ripple: false });
-          await new Promise(r => setTimeout(r, 800));
+          await new Promise(r => setTimeout(r, 700));
           if (!isActive) return;
 
           setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
@@ -254,12 +257,12 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
         setSelectedHseq(null);
       }
 
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 800));
       currentIndex++;
       playNext();
     };
 
-    const startTimer = setTimeout(() => { playNext(); }, 2000);
+    const startTimer = setTimeout(() => { playNext(); }, 1800);
     return () => { isActive = false; clearTimeout(startTimer); };
   }, [currentStep, isTVMode, isLivePreview, overrideStep]);
 
@@ -297,12 +300,12 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
 
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 700));
         if (!isActive) return;
 
         const rect = el.getBoundingClientRect();
         setFakeMouse({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, visible: true, clicking: false, ripple: false });
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 800));
         if (!isActive) return;
 
         setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
@@ -310,15 +313,16 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
         setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
         setSelectedHr(current);
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 600));
         if (!isActive) return;
 
         const modal = document.getElementById('hr-modal-content');
         if (modal) {
           const scrollDistance = Math.max(0, modal.scrollHeight - modal.clientHeight);
           if (scrollDistance > 0) {
-            const scrollDuration = Math.min(8000, scrollDistance * 10);
-            await new Promise(r => setTimeout(r, 1500));
+            // Scroll +0.2 más rápido y fluido
+            const scrollDuration = Math.max(7200, scrollDistance * 14.5);
+            await new Promise(r => setTimeout(r, 2000));
             if (!isActive) return;
             const startTime = Date.now();
             await new Promise(resolve => {
@@ -332,9 +336,9 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
               };
               requestAnimationFrame(animateModalScroll);
             });
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 2200));
           } else {
-            const readTime = Math.max(4000, Math.min(8000, (current.desc?.length || 0) * 40));
+            const readTime = Math.max(4200, Math.min(7200, (current.desc?.length || 0) * 36));
             await new Promise(r => setTimeout(r, readTime));
           }
         }
@@ -918,6 +922,8 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
                 videosPlayedThisCycle={videosPlayedThisCycle}
                 goToStep={goToStep}
                 isEditorOpen={isEditorOpen}
+                isLivePreview={isLivePreview}
+                overrideStep={overrideStep}
                 isTVMode={isTVMode}
                 openEditor={openEditor}
               />
@@ -927,10 +933,9 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
             {targetStep === 6 && (
               <ConveniosModule
                 data={data?.convenios || []}
-                autoPlay={!isLivePreview && (isTVMode || !isEditorOpen)}
-                onComplete={() => goToStep(0)}
-                compact={isLivePreview}
                 isLivePreview={isLivePreview}
+                isTVMode={isTVMode}
+                openEditor={openEditor}
                 selectedElementId={selectedElementId}
                 onElementClick={onElementClick}
               />
@@ -1174,13 +1179,32 @@ export default function CarteleraPage({ isTVMode = false, isLivePreview = false,
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
                 border: '1px solid rgba(255,255,255,0.1)'
               }}>
-              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.15)', margin: '0 auto 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Shield size={32} color="#10b981" />
-                </div>
-                <h2 style={{ fontSize: '1.75rem', margin: 0, color: 'var(--text-primary)' }}>{selectedHseq.title}</h2>
-                <div style={{ color: '#10b981', fontWeight: 600, marginTop: '0.25rem' }}>{selectedHseq.category || 'HSEQ'}</div>
-              </div>
+              {(() => {
+                const category = selectedHseq.category || 'SST';
+                const isAmbiental = category === 'Ambiental';
+                const isCalidad = category === 'Calidad';
+                const colorCode = isAmbiental ? '#84cc16' : isCalidad ? '#38bdf8' : '#10b981';
+                const bgCode = isAmbiental ? 'rgba(132, 204, 22, 0.15)' : isCalidad ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                const label = isAmbiental ? 'Medio Ambiente' : isCalidad ? 'Calidad e Inocuidad' : 'Seguridad y Salud (SST)';
+
+                return (
+                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: bgCode, margin: '0 auto 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                      {selectedHseq.icon && (selectedHseq.icon.startsWith('http') || selectedHseq.icon.startsWith('/') || selectedHseq.icon.startsWith('data:')) ? (
+                        <img src={selectedHseq.icon} alt="Icono" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : isAmbiental ? (
+                        <Leaf size={32} color={colorCode} strokeWidth={2.3} />
+                      ) : isCalidad ? (
+                        <Award size={32} color={colorCode} strokeWidth={2.3} />
+                      ) : (
+                        <Shield size={32} color={colorCode} strokeWidth={2.3} />
+                      )}
+                    </div>
+                    <h2 style={{ fontSize: '1.75rem', margin: 0, color: 'var(--text-primary)' }}>{selectedHseq.title}</h2>
+                    <div style={{ color: colorCode, fontWeight: 700, marginTop: '0.35rem', letterSpacing: '0.5px' }}>{label} • POLLO FIESTA S.A.</div>
+                  </div>
+                );
+              })()}
               {selectedHseq.desc && (
                 <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6, textAlign: 'center' }}>{selectedHseq.desc}</p>
               )}

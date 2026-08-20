@@ -54,16 +54,6 @@
   ],
   "events": [
     {
-      "id": "e_1785859693425",
-      "title": "EVENTOS POLLO FIESTA",
-      "date": "",
-      "category": "",
-      "priority": "Normal",
-      "desc": "HALLOWEEN",
-      "icon": "📢",
-      "image": "http://localhost:5000/uploads/1785859701917-961200695.png"
-    },
-    {
       "id": "e_1784909378913",
       "title": "DIA DEL HOMBRE",
       "date": "",
@@ -202,6 +192,16 @@
       "desc": "",
       "icon": "📢",
       "image": "http://localhost:5000/uploads/1785859623213-298360982.png"
+    },
+    {
+      "id": "e_1785859693425",
+      "title": "EVENTOS POLLO FIESTA",
+      "date": "",
+      "category": "",
+      "priority": "Normal",
+      "desc": "HALLOWEEN",
+      "icon": "📢",
+      "image": "http://localhost:5000/uploads/1785859701917-961200695.png"
     }
   ],
   "titles": {

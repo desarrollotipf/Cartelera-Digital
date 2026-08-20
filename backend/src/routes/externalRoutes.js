@@ -18,7 +18,7 @@ const DOLLAR_CACHE_TIME = 60 * 60 * 1000; // 1 hour
 const NEWS_CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 
 // Open-Meteo API for Bogota (Latitude: 4.6097, Longitude: -74.0817)
-const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true';
+const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true&hourly=precipitation_probability&timezone=America%2FBogota&forecast_days=1';
 // ExchangeRate-API for USD to COP
 const DOLLAR_API_URL = 'https://open.er-api.com/v6/latest/USD';
 // RSS Feed for Fenavi Colombia News

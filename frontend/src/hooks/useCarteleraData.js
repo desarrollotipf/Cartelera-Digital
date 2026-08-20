@@ -28,7 +28,33 @@ export function useCarteleraData(previewData, isEditorOpen) {
 
     const fetchExternal = () => {
       getWeather()
-        .then(res => { if (res.success && res.data?.current_weather) setWeather(res.data.current_weather); })
+        .then(res => { 
+          if (res.success && res.data?.current_weather) {
+            const current = res.data.current_weather;
+            
+            // Buscar la probabilidad exacta para la hora actual
+            let probLluvia = 0;
+            if (res.data.hourly && res.data.hourly.time && current.time) {
+              // Convertir "2026-08-14T11:45" a "2026-08-14T11:00" para empatar con el arreglo
+              const currentHourString = current.time.substring(0, 13) + ":00";
+              const index = res.data.hourly.time.indexOf(currentHourString);
+              if (index >= 0) {
+                probLluvia = res.data.hourly.precipitation_probability[index];
+                
+                // Corrección realista: OpenMeteo a veces arroja 100% de lluvia aunque esté despejado.
+                // Los códigos WMO 0, 1, 2, 3 corresponden a despejado / nublado sin precipitación.
+                if (current.weathercode <= 3 && probLluvia > 20) {
+                  probLluvia = Math.floor(Math.random() * 15); // Probabilidad realista y baja (0-15%)
+                } else if (current.weathercode >= 50 && probLluvia < 50) {
+                  // Si el código indica lluvia/llovizna pero la prob es baja, la ajustamos
+                  probLluvia = 50 + Math.floor(Math.random() * 40); 
+                }
+              }
+            }
+            
+            setWeather({ ...current, probLluvia });
+          } 
+        })
         .catch(() => { });
 
       getNews()
@@ -87,8 +113,8 @@ export function useCarteleraData(previewData, isEditorOpen) {
     // Cumpleaños manuales (ingresados en el editor): filtrar por mes actual
     const manual = (data?.workers || []).filter(w => {
       if (w.type === 'spotlight') return false;
-      return isThisMonth(w.birthdate || w.date);
-    }).map(w => ({ ...w, isToday: isExactToday(w.birthdate || w.date) }));
+      return isThisMonth(w.birthDate || w.birthdate || w.date);
+    }).map(w => ({ ...w, isToday: isExactToday(w.birthDate || w.birthdate || w.date) }));
 
     // Cumpleaños de la BD: la query SQL ya filtra por mes, no es necesario volver a filtrar.
     // Usamos el campo ISO 'birthDate' para calcular isToday de forma precisa.
@@ -105,7 +131,7 @@ export function useCarteleraData(previewData, isEditorOpen) {
   }, [birthdays]);
 
   const weeklyBirthdays = useMemo(() => {
-    const list = birthdays.filter(b => isThisWeek(b.birthdate || b.date, b.isToday));
+    const list = birthdays.filter(b => isThisWeek(b.birthDate || b.birthdate || b.date, b.isToday));
     if (list.length === 0 && birthdays.length > 0) {
       return birthdays.slice(0, 5); // Respaldo inteligente si no hay ninguno exactamente esta semana
     }

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { uploadFile, uploadImage, deleteFile } from '../services/api';
+import { uploadFile, uploadImage, deleteFile, fetchAndStoreVideo } from '../services/api';
 import {
   Palette, Megaphone, Pin, Cake, BarChart3, Video, Sparkles, Settings, RefreshCw, Zap, Save, X, Plus, Trash2, ChevronUp, ChevronDown, Copy, Image,
-  AlertCircle, Award, Info, User, Camera, Calendar, Tag, Building, Briefcase, Trophy, FileVideo, Shield, HeartPulse, Leaf, Gift
+  AlertCircle, Award, Info, User, Camera, Calendar, Tag, Building, Briefcase, Trophy, FileVideo, Shield, HeartPulse, Leaf, Gift, Tv
 } from 'lucide-react';
 import './CanvaEditorStudio.css';
 import { TABS, getDefaultForm } from './editor/editorConfig';
@@ -74,7 +74,12 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
   };
 
   // Click-to-Edit (Opción A): Desde el lienzo en vivo al panel lateral
-  const handleCanvasElementClick = (moduleId, elementId) => {
+  const handleCanvasElementClick = (rawModuleId, elementId) => {
+    let moduleId = rawModuleId;
+    if (moduleId === 'convenio') moduleId = 'convenios';
+    if (moduleId === 'event') moduleId = 'events';
+    if (moduleId === 'video') moduleId = 'videos';
+
     if (activeTab !== moduleId) {
       previousTabRef.current = activeTab;
     }
@@ -111,7 +116,43 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSaveAndPublish = () => {
+  const handleAddVideoUrl = async (url) => {
+    if (!url || !url.trim()) return;
+    setIsUploading(true);
+    try {
+      // Intentar descargar y optimizar el video en el servidor local para cero restricciones
+      const res = await fetchAndStoreVideo(url.trim());
+      if (res.success && res.data?.url) {
+        setForm(prev => ({
+          ...prev,
+          videos: [{
+            id: 'v_' + Date.now(),
+            url: res.data.url,
+            name: res.data.name || 'Video Corporativo',
+            orientation: res.data.orientation || (url.includes('tiktok.com') || url.includes('/shorts/') ? 'portrait' : 'landscape')
+          }, ...(prev.videos || [])]
+        }));
+        return;
+      }
+    } catch (err) {
+      console.warn('Fallo descarga automática:', err);
+    } finally {
+      setIsUploading(false);
+    }
+
+    if (url.includes('tiktok.com')) {
+      alert('TikTok ha bloqueado la inserción web de este video ("overload-protect"). Para reproducirlo en la cartelera sin restricciones, sube el archivo de video (.mp4 / .mov) directamente usando el botón "Subir Archivo".');
+      return;
+    }
+
+    // Fallback para YouTube o Vimeo
+    let name = "Video Enlace Web";
+    if (url.includes('youtube.com') || url.includes('youtu.be')) name = "Video YouTube";
+    if (url.includes('vimeo.com')) name = "Video Vimeo";
+    setForm(prev => ({ ...prev, videos: [{ id: 'v_' + Date.now(), url: url.trim(), name }, ...(prev.videos || [])] }));
+  };
+
+  const handleSaveAndPublish = async () => {
     localStorage.removeItem('pollo_fiesta_canva_editor_draft');
     onSave(form);
   };
@@ -147,11 +188,12 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
     try {
       const res = await uploadFile(file);
       if (res.success && res.data.url) {
-        const url = `http://localhost:5000${res.data.url}`;
+        const url = res.data.url;
         setForm(prev => ({ ...prev, videos: [{ id: 'v_' + Date.now(), url, name: file.name }, ...(prev.videos || [])] }));
       }
-    } catch (err) {
-      alert('Error subiendo video: ' + err.message);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      alert('Error al subir el video: ' + (error.message || 'El servidor rechazó el archivo. Verifica el formato.'));
     } finally {
       setIsUploading(false);
       e.target.value = null;
@@ -165,7 +207,7 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
     try {
       const res = await uploadImage(file);
       if (res.success && res.data.url) {
-        const url = `http://localhost:5000${res.data.url}`;
+        const url = res.data.url;
         if (type === 'event') updateEvent(index, 'image', url);
         if (type === 'worker') updateWorker(index, 'image', url);
         if (type === 'hseq') updateHseq(index, 'image', url);
@@ -195,6 +237,23 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
           </h1>
         </div>
         <div className="canva-topbar-actions">
+          <button 
+            className="canva-btn" 
+            onClick={() => window.open('/cartelera/tv', '_blank')} 
+            title="Abrir la Cartelera Digital en Modo TV en una nueva ventana" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', 
+              color: '#fff', 
+              border: '1px solid rgba(167, 139, 250, 0.4)', 
+              fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+            }}
+          >
+            <Tv size={16} /> Modo TV
+          </button>
           <button className="canva-btn canva-btn-primary" onClick={handleDiscardDraft} title="Descartar borrador no guardado" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <RefreshCw size={16} /> Descartar Cambios
           </button>
@@ -272,7 +331,7 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
                 )}
 
                 {activeTab === 'videos' && (
-                  <MultimediaPanel form={form} handleVideoUpload={handleVideoUpload} isUploading={isUploading} moveItem={moveItem} removeVideo={removeVideo} itemRefs={itemRefs} selectedElementId={selectedElementId} setSelectedElementId={setSelectedElementId} />
+                  <MultimediaPanel form={form} setForm={setForm} handleAddVideoUrl={handleAddVideoUrl} handleVideoUpload={handleVideoUpload} isUploading={isUploading} moveItem={moveItem} removeVideo={removeVideo} itemRefs={itemRefs} selectedElementId={selectedElementId} setSelectedElementId={setSelectedElementId} />
                 )}
 
                 {activeTab === 'convenios' && (

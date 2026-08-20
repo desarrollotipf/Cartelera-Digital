@@ -137,15 +137,16 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
       const modalRect = document.getElementById(`convenio-card-${current.id}`)?.getBoundingClientRect();
       const centerX = modalRect ? modalRect.left + modalRect.width / 2 : window.innerWidth / 2;
       const centerY = modalRect ? modalRect.top + modalRect.height / 2 : window.innerHeight / 2;
-      // Wait a few seconds to let them read the modal
-      await new Promise(r => setTimeout(r, 2000));
+      // Pausa inicial para permitir leer la cabecera del convenio (+0.2 más ágil)
+      await new Promise(r => setTimeout(r, 2200));
       if (!isActive) return;
 
       const modalEl = document.getElementById('convenio-modal-content');
       if (modalEl) {
         const maxScroll = modalEl.scrollHeight - modalEl.clientHeight;
         if (maxScroll > 10) {
-          const duration = 8000 + (maxScroll * 5); // Scroll más lento
+          // Scroll suave +0.2 más rápido
+          const duration = 8000 + (maxScroll * 11);
           const startTime = Date.now();
           await new Promise(resolve => {
             const animateScroll = () => {
@@ -159,12 +160,13 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
             };
             requestAnimationFrame(animateScroll);
           });
+          // Pausa al final antes de cerrar
           await new Promise(r => setTimeout(r, 2500));
         } else {
-          await new Promise(r => setTimeout(r, 3000));
+          await new Promise(r => setTimeout(r, 5200));
         }
       } else {
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 5200));
       }
 
       if (!isActive) return;

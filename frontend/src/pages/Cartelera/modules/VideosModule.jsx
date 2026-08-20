@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Video } from 'lucide-react';
 
@@ -13,9 +13,148 @@ const VideosModule = ({
   videosPlayedThisCycle,
   goToStep,
   isEditorOpen,
+  isLivePreview,
+  overrideStep,
   isTVMode,
   openEditor
 }) => {
+  // Registro de URLs de videos con fallos, bloqueos o errores de embed para excluirlos automáticamente
+  const [failedUrls, setFailedUrls] = React.useState(new Set());
+
+  // Lista de videos limpios y 100% funcionales
+  const validVideos = React.useMemo(() => {
+    return (data?.videos || []).filter(v => v?.url && !failedUrls.has(v.url.trim()));
+  }, [data?.videos, failedUrls]);
+
+  const handleVideoEnded = React.useCallback(() => {
+    // Si el editor está abierto o en modo vista previa, rotar solo dentro de videos sin salir
+    if (isEditorOpen || isLivePreview) {
+      if (validVideos.length > 1) {
+        setIsDeckTransitioning(true);
+        setVideoIndex((videoIndex + 1) % validVideos.length);
+      }
+      return;
+    }
+    
+    if (validVideos.length === 0) {
+      goToStep(6);
+      return;
+    }
+    
+    videosPlayedThisCycle.current += 1;
+    const nextIndex = (videoIndex + 1) % validVideos.length;
+
+    // En Modo TV / Cartelera normal:
+    // Si hay más videos, rota hasta completar el ciclo (máximo 3 videos por ciclo)
+    if (validVideos.length > 1 && videosPlayedThisCycle.current < Math.min(validVideos.length, 3)) {
+      setIsDeckTransitioning(true);
+      setVideoIndex(nextIndex);
+    } else {
+      // Al terminar los videos del ciclo en TV, avanza inmediatamente a Convenios (Paso 6)
+      videosPlayedThisCycle.current = 0; // Reiniciar contador para el próximo ciclo
+      setVideoIndex(nextIndex);
+      goToStep(6);
+    }
+  }, [validVideos, isEditorOpen, isLivePreview, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep]);
+
+  // Función para descartar de inmediato videos caídos o bloqueados
+  const markVideoAsFailed = React.useCallback((url) => {
+    if (!url) return;
+    console.warn('[VideosModule] Video con error o bloqueo detectado, descartando:', url);
+    setFailedUrls(prev => {
+      const next = new Set(prev);
+      next.add(url.trim());
+      return next;
+    });
+    // Avanzar inmediatamente al siguiente video válido
+    handleVideoEnded();
+  }, [handleVideoEnded]);
+
+  // Escuchar cuando el video de YouTube o Vimeo termina o falla mediante postMessage
+  useEffect(() => {
+    const handleMessage = (e) => {
+      try {
+        const raw = e.data;
+        if (!raw) return;
+
+        // Detección directa por texto crudo
+        if (typeof raw === 'string') {
+          // Errores de YouTube o bloqueo de servidor
+          if (raw.includes('"event":"onError"') || raw.includes('"error"') || raw.includes('overload-protect')) {
+            const activeVid = validVideos[videoIndex % Math.max(validVideos.length, 1)];
+            if (activeVid?.url) markVideoAsFailed(activeVid.url);
+            return;
+          }
+
+          if (raw.includes('"playerState":0') || raw.includes('"info":0') || (raw.includes('onStateChange') && raw.includes(':0'))) {
+            handleVideoEnded();
+            return;
+          }
+          if (raw.includes('"event":"finish"') || raw.includes('"event":"ended"')) {
+            handleVideoEnded();
+            return;
+          }
+        }
+        
+        let msg = raw;
+        if (typeof raw === 'string') {
+          try { msg = JSON.parse(raw); } catch (_) {}
+        }
+        
+        if (msg && typeof msg === 'object') {
+          // YouTube Error (código 100, 101, 150 - video no disponible o no embebible)
+          if (msg.event === 'onError' || msg.info === 100 || msg.info === 101 || msg.info === 150) {
+            const activeVid = validVideos[videoIndex % Math.max(validVideos.length, 1)];
+            if (activeVid?.url) markVideoAsFailed(activeVid.url);
+            return;
+          }
+
+          // YouTube: YT.PlayerState.ENDED (0)
+          const isYTEnded = (msg.event === 'onStateChange' && msg.info === 0) ||
+                            (msg.info?.playerState === 0) ||
+                            (msg.event === 'infoDelivery' && msg.info?.playerState === 0);
+          
+          // Vimeo: event === 'finish' o 'ended'
+          const isVimeoEnded = msg.event === 'finish' || msg.event === 'ended';
+
+          if (isYTEnded || isVimeoEnded) {
+            handleVideoEnded();
+          }
+        }
+      } catch (err) {
+        // Ignorar mensajes no relacionados
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleVideoEnded, markVideoAsFailed, validVideos, videoIndex]);
+
+  useEffect(() => {
+    if (isEditorOpen) return;
+    if (validVideos.length === 0) {
+      if (isTVMode) {
+        const timer = setTimeout(() => goToStep(6), 2000);
+        return () => clearTimeout(timer);
+      }
+      return;
+    }
+    
+    const activeIdx = (videoIndex % validVideos.length);
+    const activeVid = validVideos[activeIdx];
+    
+    if (!activeVid?.url) {
+      const timer = setTimeout(() => {
+        handleVideoEnded();
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else if (activeVid.url.includes('tiktok.com') && !activeVid.url.startsWith('/uploads')) {
+      // Las URLs directas de TikTok son bloqueadas por TikTok ('overload-protect'). Descartar de inmediato para no congelar la pantalla.
+      console.warn('[VideosModule] Descartando embed crudo de TikTok bloqueado:', activeVid.url);
+      markVideoAsFailed(activeVid.url);
+      return;
+    }
+  }, [videoIndex, validVideos, isEditorOpen, isTVMode, handleVideoEnded, markVideoAsFailed, goToStep]);
 
   return (
     <motion.div
@@ -31,7 +170,7 @@ const VideosModule = ({
       <div className="orbital-video-stage">
         <div className="orbital-arc-wheel">
           {(() => {
-            const rawVideos = data?.videos || [];
+            const rawVideos = validVideos;
             if (rawVideos.length === 0) {
               return (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', color: 'var(--text-muted)', fontSize: '1.4rem', fontWeight: 700 }}>
@@ -58,18 +197,66 @@ const VideosModule = ({
               const isSymmetricHidden = (orbitalDeck.length % 2 === 0 && Math.abs(offset) === orbitalDeck.length / 2);
 
               const isSelected = (offset === 0 && !vid.isPromo);
-              const isExpanded = !isDeckTransitioning && isSelected;
 
-              // Cálculo trigonométrico orbital en abanico (alineado a formato vertical de TikTok 9:16)
+              // --- ARQUITECTURA MULTIPLATAFORMA & ORIENTACIÓN ---
+              let safeUrl = (vid.url || '').trim();
+              let isYouTube = false;
+              let youtubeId = '';
+              let isShort = false;
+              let isVimeo = false;
+              let vimeoId = '';
+              let isTikTok = false;
+              let tiktokId = '';
+              
+              if (safeUrl.includes('youtube.com') || safeUrl.includes('youtu.be')) {
+                isYouTube = true;
+                isShort = safeUrl.includes('/shorts/');
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?]*).*/;
+                const match = safeUrl.match(regExp);
+                if (match && match[2].length === 11) {
+                  youtubeId = match[2];
+                } else {
+                  try {
+                    const u = new URL(safeUrl.startsWith('http') ? safeUrl : 'https://' + safeUrl);
+                    if (u.hostname.includes('youtu.be')) youtubeId = u.pathname.slice(1).split('/')[0].split('?')[0];
+                    else if (u.pathname.includes('/shorts/')) youtubeId = u.pathname.split('/shorts/')[1].split('/')[0].split('?')[0];
+                    else if (u.pathname.includes('/embed/')) youtubeId = u.pathname.split('/embed/')[1].split('/')[0].split('?')[0];
+                    else youtubeId = u.searchParams.get('v') || '';
+                  } catch (e) {
+                    console.error('Error parseando URL de YouTube:', e);
+                  }
+                }
+              } else if (safeUrl.includes('vimeo.com')) {
+                isVimeo = true;
+                const match = safeUrl.match(/(?:vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+))/);
+                vimeoId = match ? match[1] : '';
+              } else if (safeUrl.includes('tiktok.com')) {
+                isTikTok = true;
+                const match = safeUrl.match(/\/video\/(\d+)/) || safeUrl.match(/\/embed\/(?:v2\/)?(\d+)/) || safeUrl.match(/\/v\/(\d+)/);
+                tiktokId = match ? match[1] : '';
+              }
+
+              const vidId = vid.id || idx;
+              
+              // Detección automática de orientación:
+              // - Si es TikTok, YouTube Short o marcado portrait: 9:16 (TikTok Vertical)
+              // - Si es YouTube normal, Vimeo o video horizontal: 16:9 (Landscape)
+              let isLandscape = true;
+              if (isTikTok || isShort || vid.orientation === 'portrait' || videoOrientations[vidId] === 'portrait') {
+                isLandscape = false;
+              } else if (videoOrientations[vidId] === 'landscape') {
+                isLandscape = true;
+              }
+
+              // Cálculo trigonométrico orbital en abanico
               const angle = isSymmetricHidden ? 0 : offset * 15;
-              const translateX = isSymmetricHidden ? 0 : offset * 255;
+              const translateX = isSymmetricHidden ? 0 : offset * (isLandscape ? 290 : 255);
               const translateY = isSymmetricHidden ? 50 : Math.abs(offset) * 25;
               const translateZ = isSymmetricHidden ? -300 : -Math.abs(offset) * 140;
               const scale = isSymmetricHidden ? 0.5 : Math.max(0.74, 1 - Math.abs(offset) * 0.12);
               const opacity = isSymmetricHidden ? 0 : Math.max(0.55, 1 - Math.abs(offset) * 0.22);
 
-              // El video activo en reproducción toma la clase .is-max-expanded en formato vertical TikTok (9:16, 94% de altura, z-index: 100). Las tarjetas siguientes ("los que siguen") quedan en el fondo bien alineadas a los laterales sin desenfoques de CPU.
-              const cardStyle = !isExpanded ? {
+              const cardStyle = (!isSelected) ? {
                 transform: `translate3d(${translateX}px, ${translateY}px, ${translateZ}px) rotate(${angle}deg) scale(${scale})`,
                 opacity,
                 filter: offset !== 0 ? 'brightness(0.65)' : 'none',
@@ -77,9 +264,7 @@ const VideosModule = ({
                 zIndex: 50 - Math.abs(offset)
               } : { zIndex: 100 };
 
-              const vidId = vid.id || idx;
-              const isLandscape = videoOrientations[vidId] === 'landscape';
-              const expandedClass = isExpanded
+              const expandedClass = isSelected
                 ? (isLandscape ? ' is-max-expanded-landscape' : ' is-max-expanded')
                 : '';
 
@@ -89,59 +274,100 @@ const VideosModule = ({
                   className={`orbital-card-item${expandedClass}`}
                   style={cardStyle}
                 >
-                  {vid.url && !vid.isPromo ? (
-                    <div className="cinema-ambilight-container" style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-                      <video
-                        ref={el => {
-                          if (el) {
-                            if (isExpanded) {
-                              if (el.paused) {
-                                const playPromise = el.play();
-                                if (playPromise !== undefined) {
-                                  playPromise.catch(() => { });
-                                }
-                              }
-                            } else {
-                              if (!el.paused) {
-                                el.pause();
-                                el.currentTime = 0;
-                              }
+                  {safeUrl && !vid.isPromo && isSelected ? (
+                    <div className="cinema-ambilight-container" style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', background: '#000', borderRadius: '16px' }}>
+                      {isYouTube && youtubeId ? (
+                        /* OPCIÓN B1: YouTube Iframe Oficial Nocookie */
+                        <iframe
+                          key={`yt-active-${vidId}-${activeIdx}`}
+                          src={`https://www.youtube-nocookie.com/embed/${youtubeId}?enablejsapi=1&autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1`}
+                          title={vid.name || `Video ${vidId}`}
+                          onLoad={(e) => {
+                            try {
+                              e.target.contentWindow?.postMessage('{"event":"listening","id":1,"channel":"widget"}', '*');
+                            } catch (_) {}
+                          }}
+                          onError={() => markVideoAsFailed(safeUrl)}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                        />
+                      ) : isVimeo && vimeoId ? (
+                        /* OPCIÓN B2: Vimeo Player Oficial */
+                        <iframe
+                          key={`vimeo-active-${vidId}-${activeIdx}`}
+                          src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=0&autopause=0`}
+                          title={vid.name || `Vimeo ${vidId}`}
+                          onError={() => markVideoAsFailed(safeUrl)}
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                          style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                        />
+                      ) : isTikTok && tiktokId ? (
+                        /* OPCIÓN B3: TikTok Embed Directo (Sin Zoom) */
+                        <iframe
+                          key={`tiktok-active-${vidId}-${activeIdx}`}
+                          src={`https://www.tiktok.com/embed/v2/${tiktokId}?lang=es-ES`}
+                          title={vid.name || `TikTok ${vidId}`}
+                          onError={() => markVideoAsFailed(safeUrl)}
+                          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            border: 0,
+                            display: 'block'
+                          }}
+                        />
+                      ) : (
+                        /* OPCIÓN A: Archivo local HTML5 Nativo (.mp4, .webm, /uploads/...) */
+                        <video
+                          key={`video-native-active-${vidId}-${activeIdx}-${safeUrl}`}
+                          src={safeUrl}
+                          autoPlay
+                          muted
+                          playsInline
+                          controls
+                          ref={(el) => {
+                            if (el) {
+                              el.currentTime = 0;
+                              el.muted = true;
+                              el.play().catch(() => {});
                             }
-                          }
-                        }}
-                        src={vid.url}
-                        autoPlay
-                        muted
-                        playsInline
-                        onLoadedMetadata={e => {
-                          const { videoWidth, videoHeight } = e.target;
-                          if (videoWidth && videoHeight) {
-                            const orientation = videoWidth > videoHeight ? 'landscape' : 'portrait';
-                            setVideoOrientations(prev => ({ ...prev, [vidId]: orientation }));
-                          }
-                        }}
-                        onEnded={() => {
-                          if (!isSelected) return;
-                          if (isEditorOpen) return;
-                          const vids = data?.videos || [];
-                          videosPlayedThisCycle.current += 1;
-                          const nextIndex = (videoIndex + 1) % vids.length;
-
-                          if (videosPlayedThisCycle.current >= 4 || videosPlayedThisCycle.current >= vids.length) {
-                            setVideoIndex(nextIndex);
-                            goToStep(6);
-                          } else {
-                            setIsDeckTransitioning(true);
-                            setVideoIndex(nextIndex);
-                          }
-                        }}
-                        style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', transition: 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)' }}
-                      />
+                          }}
+                          onLoadedMetadata={(e) => {
+                            const isWide = e.target.videoWidth >= e.target.videoHeight;
+                            if (setVideoOrientations) {
+                              setVideoOrientations(prev => ({ ...prev, [vidId]: isWide ? 'landscape' : 'portrait' }));
+                            }
+                            e.target.currentTime = 0;
+                            e.target.muted = true;
+                            e.target.play().catch(() => {});
+                          }}
+                          onEnded={handleVideoEnded}
+                          onError={(e) => {
+                            console.warn('Error en video local:', e);
+                            markVideoAsFailed(safeUrl);
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                      )}
                     </div>
                   ) : (
-                    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#0F172A' }}>
-                      <img src={vid.img || 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&auto=format&fit=crop&q=80'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} loading="lazy" />
+                    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={vid.img || 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&auto=format&fit=crop&q=80'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} loading="lazy" />
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85), transparent)' }} />
+                      <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+                        <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.25)', border: '2px solid #38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+                          <Video size={22} color="#38bdf8" />
+                        </div>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{vid.name || 'Video Corporativo'}</span>
+                      </div>
                     </div>
                   )}
                 </div>

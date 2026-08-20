@@ -46,19 +46,19 @@ export function useEditorForm(form, setForm, getDefaultForm, data, onReset) {
     setForm({ ...form, convenios: updated });
   };
 
-  const addHrItem = () => setForm({ ...form, hrModule: [{ id: 'hr_' + Date.now(), title: 'Nuevo Aviso RRHH', desc: 'Detalle de la comunicación', icon: '📌', type: 'info' }, ...(form.hrModule || [])] });
+  const addHrItem = () => setForm({ ...form, hrModule: [...(form.hrModule || []), { id: 'hr_' + Date.now(), title: 'Nuevo Aviso RRHH', desc: 'Detalle de la comunicación', icon: '📌', type: 'info' }] });
   const removeHrItem = (i) => setForm({ ...form, hrModule: form.hrModule.filter((_, idx) => idx !== i) });
 
-  const addHseqItem = () => setForm({ ...form, hseq: [{ id: 'hs_' + Date.now(), title: 'Nuevo Comunicado HSEQ', desc: 'Descripción del protocolo o normativa...', icon: '🛡️', category: 'SST', type: 'warning' }, ...(form.hseq || [])] });
+  const addHseqItem = () => setForm({ ...form, hseq: [...(form.hseq || []), { id: 'hs_' + Date.now(), title: 'Nuevo Comunicado HSEQ', desc: 'Descripción del protocolo o normativa...', icon: '🛡️', category: 'SST', type: 'warning' }] });
   const removeHseqItem = (i) => setForm({ ...form, hseq: form.hseq.filter((_, idx) => idx !== i) });
 
-  const addWorker = () => setForm({ ...form, workers: [{ id: 'w_' + Date.now(), name: 'NUEVO COLABORADOR', role: 'Operario Planta', department: 'Producción', type: 'birthday', birthdate: '15 de Julio', avatarColor: '#0b4274' }, ...(form.workers || [])] });
+  const addWorker = () => setForm({ ...form, workers: [...(form.workers || []), { id: 'w_' + Date.now(), name: 'NUEVO COLABORADOR', role: 'Operario Planta', department: 'Producción', type: 'birthday', birthdate: '15 de Julio', avatarColor: '#0b4274' }] });
   const removeWorker = (i) => setForm({ ...form, workers: form.workers.filter((_, idx) => idx !== i) });
 
-  const addEvent = () => setForm({ ...form, events: [{ id: 'e_' + Date.now(), title: 'Nuevo Comunicado Corporativo', desc: 'Descripción y alcance del evento.', icon: '📢' }, ...(form.events || [])] });
+  const addEvent = () => setForm({ ...form, events: [...(form.events || []), { id: 'e_' + Date.now(), title: 'Nuevo Comunicado Corporativo', desc: 'Descripción y alcance del evento.', icon: '📢' }] });
   const removeEvent = (i) => setForm({ ...form, events: form.events.filter((_, idx) => idx !== i) });
 
-  const addConvenio = () => setForm({ ...form, convenios: [{ id: 'c_' + Date.now(), title: 'Nuevo Convenio', category: 'General', discount: '10% dto', description: 'Descripción detallada...', color: '#E11D48', details: '' }, ...(form.convenios || [])] });
+  const addConvenio = () => setForm({ ...form, convenios: [...(form.convenios || []), { id: 'c_' + Date.now(), title: 'Nuevo Convenio', category: 'General', discount: '10% dto', description: 'Descripción detallada...', color: '#E11D48', details: '' }] });
   const removeConvenio = (i) => setForm({ ...form, convenios: (form.convenios || []).filter((_, idx) => idx !== i) });
 
   const removeVideo = (i) => setForm({ ...form, videos: (form.videos || []).filter((_, idx) => idx !== i) });

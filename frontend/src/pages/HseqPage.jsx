@@ -5,15 +5,27 @@ import { getCartelera, updateCartelera } from '../services/api';
 import CanvaEditorStudio from '../components/CanvaEditorStudio';
 import CarteleraPage from './CarteleraPage';
 import LiveClock from '../components/LiveClock';
+import { getDefaultForm } from '../components/editor/editorConfig';
 
 export default function HseqPage() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => {
+    const draft = localStorage.getItem('pollo_fiesta_canva_editor_draft');
+    if (draft) {
+      try { return JSON.parse(draft); } catch (e) {}
+    }
+    return getDefaultForm();
+  });
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   useEffect(() => {
     getCartelera()
-      .then(res => { if (res.success && res.data) setData(res.data); })
-      .catch(() => { });
+      .then(res => { 
+        const raw = res?.data || res;
+        if (raw && (raw.hseq || raw.topBar)) setData(raw);
+      })
+      .catch((err) => {
+        console.warn('Cargando HSEQ con datos locales:', err);
+      });
   }, []);
 
   const handleSave = async (draftData) => {

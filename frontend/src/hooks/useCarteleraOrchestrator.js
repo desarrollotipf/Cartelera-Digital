@@ -36,7 +36,7 @@ export function useCarteleraOrchestrator(
 
     let targetStep = nextStep;
     let attempts = 0;
-    while (attempts < 6) {
+    while (attempts < 7) {
       if (targetStep > 6) targetStep = 0;
 
       let isValid = true;
@@ -110,6 +110,7 @@ export function useCarteleraOrchestrator(
   useEffect(() => {
     if (currentStep === 5) {
       videosPlayedThisCycle.current = 0;
+      setVideoIndex(0); // Siempre arrancar desde el primer video al entrar a la sala de cine
     }
   }, [currentStep]);
 
@@ -210,18 +211,27 @@ export function useCarteleraOrchestrator(
 
     } else if (currentStep === 5) { // PASO 5: VIDEOS CORPORATIVOS
       const vids = data?.videos || [];
-      if (vids.length === 0 && overrideStep !== 5) {
-        goToStep(6); // volver a eventos corporativos si no hay videos
+      if (vids.length === 0 && overrideStep !== 5 && !isEditorOpen && !isLivePreview) {
+        goToStep(6); // avanzar si no hay videos y no estamos editando
         return;
       }
 
-      if (vids.length === 0) {
+      if (vids.length === 0 && overrideStep !== 5 && !isEditorOpen && !isLivePreview) {
         timeoutId = setTimeout(() => goToStep(6), 5000);
       }
-      // Si hay videos, el evento onEnded de la etiqueta <video> avanzará el ciclo.
     } else if (currentStep === 6) { // PASO 6: CONVENIOS
-      // No hacemos validacion restrictiva aqui para que puedan ver los defaults
-      // El autoplay dentro de ConveniosCompensarPage llamara a onComplete() para avanzar a goToStep(0)
+      const convenios = data?.convenios || [];
+      if (convenios.length === 0 && overrideStep !== 6 && !isEditorOpen && !isLivePreview) {
+        goToStep(0);
+        return;
+      }
+
+      if (overrideStep !== 6 && !isEditorOpen && !isLivePreview) {
+        const rotationMs = Math.max(14000, Math.min(24000, convenios.length * 3500));
+        timeoutId = setTimeout(() => {
+          goToStep(0); // Reiniciar ciclo completo de la cartelera digital
+        }, rotationMs);
+      }
     }
 
     return () => {

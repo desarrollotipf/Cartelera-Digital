@@ -3162,10 +3162,10 @@ body {
 
 /* Estado de Expansión Widescreen (16:9 Landscape) para videos horizontales al frente */
 .orbital-card-item.is-max-expanded-landscape {
-  width: 92% !important;
-  height: auto !important;
+  height: 92% !important;
+  width: auto !important;
   aspect-ratio: 16 / 9 !important;
-  max-width: 96% !important;
+  max-width: 95% !important;
   max-height: 95% !important;
   border-radius: 24px !important;
   border: 3px solid rgba(255, 255, 255, 0.4) !important;
@@ -3178,6 +3178,12 @@ body {
 /* Animación estilo escalera eléctrica para noticias */
 @keyframes news-escalator-scroll {
   0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+/* Animación de escalera para cumpleaños con pausa de lectura al inicio */
+@keyframes bday-escalator-scroll {
+  0%, 8% { transform: translateY(0); }
   100% { transform: translateY(-50%); }
 }
 
@@ -3198,5 +3204,27 @@ body {
 }
 
 .news-escalator-track:hover {
+  animation-play-state: paused;
+}
+
+/* Animación estilo escalera eléctrica para cumpleaños */
+.bday-escalator-container {
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+.bday-escalator-track {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: bday-escalator-scroll var(--escalator-speed, 45s) linear infinite;
+}
+
+.bday-escalator-track:hover {
   animation-play-state: paused;
 }

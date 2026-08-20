@@ -13,10 +13,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Compilados
+# Compilados y uploads
 dist/
 build/
 public/uploads/
+backend/public/uploads/
+*.csv
 
 # Sistema Operativo
 .DS_Store
