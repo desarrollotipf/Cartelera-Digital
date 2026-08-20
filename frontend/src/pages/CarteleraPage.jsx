@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { useCarteleraData } from '../hooks/useCarteleraData';
 import { useCarteleraOrchestrator } from '../hooks/useCarteleraOrchestrator';
 import { useFakeMouseAutoPlay } from '../hooks/useFakeMouseAutoPlay';
+import { usePortalAuth } from '../hooks/usePortalAuth';
 
 import CanvaEditorStudio from '../components/CanvaEditorStudio';
 import FlowingMenu from '../components/FlowingMenu';
@@ -109,9 +110,13 @@ export default function CarteleraPage({
     { text: 'Convenios Compensar', image: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=600&q=80', link: '#convenios' }
   ], []);
 
+  const { user } = usePortalAuth();
+  const userScope = user?.userScope || 'RRHH';
+  const isHseqUser = userScope === 'HSEQ';
+
   const openEditor = (tab) => {
     if (isTVMode || isLivePreview) return;
-    setEditorTab(tab);
+    setEditorTab(isHseqUser ? 'hseq' : tab);
     setIsEditorOpen(true);
   };
 
@@ -183,8 +188,11 @@ export default function CarteleraPage({
       return (
         <CanvaEditorStudio
           data={data}
-          initialTab={editorTab || 'topbar'}
-          initialStep={currentStep}
+          initialTab={isHseqUser ? 'hseq' : (editorTab || 'topbar')}
+          initialStep={isHseqUser ? 3 : currentStep}
+          singleTabMode={isHseqUser}
+          allowedTabs={isHseqUser ? ['hseq'] : null}
+          userScope={userScope}
           onSave={handleSaveData}
           onClose={() => setIsEditorOpen(false)}
           onReset={handleResetData}
@@ -193,7 +201,7 @@ export default function CarteleraPage({
               isTVMode={true}
               isLivePreview={true}
               previewData={draftData}
-              overrideStep={step}
+              overrideStep={isHseqUser ? 3 : step}
               onElementClick={handleSelect}
               selectedElementId={selectedId}
             />
@@ -207,6 +215,7 @@ export default function CarteleraPage({
         data={data}
         birthdays={birthdays}
         onOpenEditor={openEditor}
+        user={user}
       />
     );
   }

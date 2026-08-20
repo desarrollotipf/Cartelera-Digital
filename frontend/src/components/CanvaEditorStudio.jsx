@@ -16,9 +16,24 @@ import HseqPanel from './editor/panels/HseqPanel';
 import MultimediaPanel from './editor/panels/MultimediaPanel';
 import ConveniosPanel from './editor/panels/ConveniosPanel';
 
-export default function CanvaEditorStudio({ data, initialTab = 'topbar', initialStep = 0, singleTabMode = false, onSave, onClose, onReset, renderCanvas }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
-  const [currentPreviewStep, setCurrentPreviewStep] = useState(initialStep);
+export default function CanvaEditorStudio({ 
+  data, 
+  initialTab = 'topbar', 
+  initialStep = 0, 
+  singleTabMode = false, 
+  allowedTabs = null,
+  userScope = 'RRHH',
+  onSave, 
+  onClose, 
+  onReset, 
+  renderCanvas 
+}) {
+  const isHseqUser = userScope === 'HSEQ' || (allowedTabs && allowedTabs.length === 1 && allowedTabs[0] === 'hseq');
+  const effectiveInitialTab = isHseqUser ? 'hseq' : initialTab;
+  const effectiveInitialStep = isHseqUser ? 3 : initialStep;
+
+  const [activeTab, setActiveTab] = useState(effectiveInitialTab);
+  const [currentPreviewStep, setCurrentPreviewStep] = useState(effectiveInitialStep);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [scale, setScale] = useState(0.65);
   const viewportRef = useRef(null);
@@ -247,29 +262,28 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
         {/* 1. barra de navegacion superior */}
         <header className="canva-studio-topbar">
           <div className="canva-brand-box">
-            <div className="canva-brand-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Settings size={28} color="#38bdf8" /></div>
+            <div className="canva-brand-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Settings size={28} color={isHseqUser ? "#34d399" : "#38bdf8"} /></div>
             <h1 className="canva-brand-title">
-              POLLO FIESTA — EDITOR
-            
-          </h1>
+              {isHseqUser ? 'POLLO FIESTA — EDITOR HSEQ' : 'POLLO FIESTA — EDITOR'}
+            </h1>
         </div>
         <div className="canva-topbar-actions">
           <button 
             className="canva-btn" 
-            onClick={() => window.open('/cartelera/tv', '_blank')} 
-            title="Abrir la Cartelera Digital en Modo TV en una nueva ventana" 
+            onClick={() => window.open(isHseqUser ? '/cartelera/tv?step=3' : '/cartelera/tv', '_blank')} 
+            title={isHseqUser ? "Ver Proyección HSEQ" : "Abrir la Cartelera Digital en Modo TV"} 
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.5rem', 
-              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', 
+              background: isHseqUser ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', 
               color: '#fff', 
-              border: '1px solid rgba(167, 139, 250, 0.4)', 
+              border: isHseqUser ? '1px solid rgba(52, 211, 153, 0.4)' : '1px solid rgba(167, 139, 250, 0.4)', 
               fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+              boxShadow: isHseqUser ? '0 4px 14px rgba(5, 150, 105, 0.35)' : '0 4px 14px rgba(124, 58, 237, 0.35)'
             }}
           >
-            <Tv size={16} /> Modo TV
+            <Tv size={16} /> {isHseqUser ? 'Ver HSEQ' : 'Modo TV'}
           </button>
           <button className="canva-btn canva-btn-primary" onClick={handleDiscardDraft} title="Descartar borrador no guardado" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <RefreshCw size={16} /> Descartar Cambios
@@ -277,7 +291,7 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
           <button className="canva-btn canva-btn-primary" onClick={handleResetFactory} title="Volver a configuración de fábrica" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Zap size={16} /> Valores Fábrica
           </button>
-          <button className="canva-btn canva-btn-primary" onClick={handleSaveAndPublish} disabled={isUploading} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button className="canva-btn canva-btn-primary" onClick={handleSaveAndPublish} disabled={Boolean(isUploading)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Save size={16} /> Guardar y Publicar
           </button>
           <button className="canva-btn canva-btn-close" onClick={onClose} title="Cerrar sin guardar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -289,9 +303,9 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
       {/* 2. BODY SPLIT STUDIO WORKSPACE */}
       <main className="canva-studio-body">
         {/* Dock Lateral Vertical (Pestañas Coherentes) */}
-        {!singleTabMode && (
+        {!singleTabMode && !isHseqUser && (
           <nav className="canva-sidebar-dock">
-            {TABS.filter(tab => !tab.hidden).map(tab => {
+            {TABS.filter(tab => !tab.hidden && (!allowedTabs || allowedTabs.includes(tab.id))).map(tab => {
             let count = null;
             if (tab.id === 'events') count = (form.events || []).length;
             if (tab.id === 'hr') count = (form.hrModule || []).length;
