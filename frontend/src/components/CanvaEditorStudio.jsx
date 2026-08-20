@@ -206,16 +206,33 @@ export default function CanvaEditorStudio({ data, initialTab = 'topbar', initial
     setIsUploading(true);
     try {
       const res = await uploadImage(file);
-      if (res.success && res.data.url) {
+      if (res && res.data && res.data.url) {
         const url = res.data.url;
         if (type === 'event') updateEvent(index, 'image', url);
         if (type === 'worker') updateWorker(index, 'image', url);
         if (type === 'hseq') updateHseq(index, 'image', url);
         if (type === 'convenio') updateConvenio(index, 'image', url);
         if (type === 'hrModule') updateHr(index, 'image', url);
+        return;
       }
     } catch (err) {
-      alert('Error subiendo imagen: ' + err.message);
+      console.warn('Fallback a carga local de imagen:', err);
+    }
+
+    // Fallback garantizado directo en el navegador con FileReader
+    try {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const url = ev.target.result;
+        if (type === 'event') updateEvent(index, 'image', url);
+        if (type === 'worker') updateWorker(index, 'image', url);
+        if (type === 'hseq') updateHseq(index, 'image', url);
+        if (type === 'convenio') updateConvenio(index, 'image', url);
+        if (type === 'hrModule') updateHr(index, 'image', url);
+      };
+      reader.readAsDataURL(file);
+    } catch (readErr) {
+      alert('Error leyendo el archivo: ' + readErr.message);
     } finally {
       setIsUploading(false);
       e.target.value = null;
