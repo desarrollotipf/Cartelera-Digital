@@ -8,6 +8,7 @@ variables:
   vmImageName: 'ubuntu-latest'
   appServiceName: 'carteleragh-front'
   VITE_API_URL: 'https://carteleragh-back-d3c9gcd6cpf3fggv.brazilsouth-01.azurewebsites.net'
+  VITE_PORTAL_FRONTEND_URL: 'https://portal.pollo-fiesta.com'
 
 stages:
 - stage: Build
@@ -30,6 +31,7 @@ stages:
       workingDirectory: '$(System.DefaultWorkingDirectory)/frontend'
       env:
         VITE_API_URL: $(VITE_API_URL)
+        VITE_PORTAL_FRONTEND_URL: $(VITE_PORTAL_FRONTEND_URL)
 
     - script: |
         npm audit --audit-level=high || true
