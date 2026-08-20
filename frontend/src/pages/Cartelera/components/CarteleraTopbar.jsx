@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import LiveClock from '../../../components/LiveClock';
 import CanvaElementWrapper from './CanvaElementWrapper';
+import { LayoutDashboard } from 'lucide-react';
 
 export default function CarteleraTopbar({
   appTitle,
@@ -12,6 +14,8 @@ export default function CarteleraTopbar({
   onElementClick,
   onOpenEditor,
 }) {
+  const navigate = useNavigate();
+
   return (
     <header
       className="cartelera-topbar"
@@ -72,25 +76,27 @@ export default function CarteleraTopbar({
               >
                 Modo Edición ⚙️
               </button>
-              <a
-                href="/cartelera/tv"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 className="action-btn action-btn-tv"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/cartelera/tv');
+                }}
               >
                 Modo TV
-              </a>
+              </button>
             </>
           ) : (
             <button
               className="action-btn action-btn-exit"
               onClick={(e) => {
                 e.stopPropagation();
-                window.close();
+                navigate('/cartelera');
               }}
+              title="Volver al Dashboard Principal"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
             >
-              Salir
+              <LayoutDashboard size={15} /> Salir al Dashboard
             </button>
           ))}
         </div>
