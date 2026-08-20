@@ -2708,6 +2708,22 @@ body {
   border-color: var(--primary);
 }
 
+.hr-stage-card.hr-card-text-only {
+  height: fit-content !important;
+  flex: initial !important;
+  min-height: auto !important;
+  padding: 1.35rem 1.6rem !important;
+  gap: 0.85rem !important;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+}
+
+.hr-stage-card.hr-card-with-image {
+  height: 100%;
+  flex: 1;
+  min-height: 420px;
+}
+
 /* Birthday Full Stage Showcase (30% Lateral / 70% Sala de Felicitación) */
 .bday-stage-container {
   display: grid;
