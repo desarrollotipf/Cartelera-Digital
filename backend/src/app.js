@@ -18,13 +18,21 @@ const PORT = process.env.PORT || 5000;
 // Inicializar conexión a la base de datos
 connectDB();
 
-// CORS — permite peticiones desde el frontend Vite (puerto 5173) y cualquier origen en desarrollo
+// CORS — permite peticiones desde orígenes locales y la URL de producción configurada en FRONTEND_URL
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://localhost:3000',
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [])
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:4173',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error(`Bloqueado por política CORS: origen ${origin} no permitido.`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));

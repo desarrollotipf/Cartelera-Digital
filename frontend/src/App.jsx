@@ -6,6 +6,7 @@ import ConveniosCompensarPage from './pages/ConveniosCompensarPage';
 
 import HseqPage from './pages/HseqPage';
 import HseqTvKioskPage from './pages/HseqTvKioskPage';
+import { usePortalAuth } from './hooks/usePortalAuth';
 
 const PAGE_TITLES = {
   '/cartelera': 'Cartelera Digital',
@@ -17,6 +18,7 @@ const PAGE_TITLES = {
 
 function AppRoutes() {
   const location = useLocation();
+  const { isAuthenticating } = usePortalAuth();
   const title = PAGE_TITLES[location.pathname] || 'Gestión Humana';
 
   // TV Kiosk: standalone page without layout

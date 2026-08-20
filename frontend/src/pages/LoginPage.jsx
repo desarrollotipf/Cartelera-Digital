@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../services/api';
 
 export default function LoginPage({ onLogin }) {
   const [credentials, setCredentials] = useState({ usernameOrEmail: '', password: '' });
@@ -18,12 +19,7 @@ export default function LoginPage({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
-      const data = await response.json();
+      const data = await loginUser(credentials);
 
       if (data.success) {
         onLogin(data.data);
@@ -32,7 +28,7 @@ export default function LoginPage({ onLogin }) {
         setError(data.message || 'Error de autenticación');
       }
     } catch (err) {
-      setError('Error conectando con el servidor');
+      setError(err.message || 'Error conectando con el servidor');
     } finally {
       setLoading(false);
     }

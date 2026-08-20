@@ -1,5 +1,5 @@
-// API client - All requests go through Vite proxy to backend on port 5000
-const API_BASE = '/api';
+// API client - All requests go through Vite proxy or VITE_API_URL in production
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -12,6 +12,9 @@ async function request(path, options = {}) {
   }
   return res.json();
 }
+
+// Auth
+export const loginUser = (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
 
 // Users
 export const getUsers = () => request('/users');
