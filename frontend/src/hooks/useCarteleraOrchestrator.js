@@ -139,12 +139,12 @@ export function useCarteleraOrchestrator(
     if (currentStep === 0) { // PASO 0: EVENTOS CORPORATIVOS
       const eventsCount = data?.events?.length || 0;
       if (eventsCount === 0 && overrideStep !== 0) {
-        goToStep(1); // saltar a Módulo RRHH si no hay eventos
+        goToStep(1);
         return;
       }
 
-      if (eventsCount === 0) {
-        timeoutId = setTimeout(() => goToStep(1), 5000);
+      if (eventsCount <= 1) {
+        timeoutId = setTimeout(() => goToStep(1), rotationMs);
       } else {
         let count = 0;
         const limit = Math.max(1, Math.min(eventsCount, 4));
@@ -155,49 +155,45 @@ export function useCarteleraOrchestrator(
           count++;
           if (count >= limit) {
             clearInterval(intervalId);
-            goToStep(1); // avanzar a Módulo RRHH tras rotar eventos con FlowingMenu
+            goToStep(1);
           }
-        }, intervalTime); // Cada evento toma una fracción del tiempo total
+        }, intervalTime);
       }
 
     } else if (currentStep === 1) { // PASO 1: MÓDULO RRHH
       const hrCount = data?.hrModule?.length || 0;
       if (hrCount === 0 && overrideStep !== 1) {
-        goToStep(2); // saltar a cumpleaños si no hay avisos
+        goToStep(2);
         return;
       }
+      // Temporizador maestro de seguridad para avanzar a Cumpleaños
+      const hrDuration = Math.max(14000, Math.min(28000, hrCount * 6000));
+      timeoutId = setTimeout(() => {
+        goToStep(2);
+      }, hrDuration);
 
-      if (hrCount === 0) {
-        timeoutId = setTimeout(() => {
-          goToStep(2); // avanzar a cumpleaños tras rotacion completa
-        }, 5000);
-      }
-      // Fake navigation will handle goToStep(2) when done
-
-    } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS Y CELEBRACIÓN SEMANAL
+    } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS
       const noBirthdays = birthdays.length === 0 && weeklyBirthdays.length === 0;
       if (noBirthdays && overrideStep !== 2) {
-        goToStep(3); // saltar a HSEQ si no hay cumpleaños
+        goToStep(3);
         return;
       }
 
       timeoutId = setTimeout(() => {
-        goToStep(3); // avanzar a HSEQ
-      }, noBirthdays ? 5000 : rotationMs);
+        goToStep(3);
+      }, noBirthdays ? 4000 : rotationMs);
 
     } else if (currentStep === 3) { // PASO 3: MÓDULO HSEQ
       const hseqCount = data?.hseq?.length || 0;
       if (hseqCount === 0 && overrideStep !== 3) {
-        goToStep(4); // saltar a Clima y Noticias
+        goToStep(4);
         return;
       }
-
-      if (hseqCount === 0) {
-        timeoutId = setTimeout(() => {
-          goToStep(4);
-        }, 5000);
-      }
-      // Fake navigation will handle goToStep(4) when done
+      // Temporizador maestro de seguridad para avanzar a Clima y Noticias
+      const hseqDuration = Math.max(14000, Math.min(28000, hseqCount * 6000));
+      timeoutId = setTimeout(() => {
+        goToStep(4);
+      }, hseqDuration);
 
     } else if (currentStep === 4) { // PASO 4: CLIMA, NOTICIAS
       const newsTimer = setTimeout(() => {
@@ -206,32 +202,31 @@ export function useCarteleraOrchestrator(
 
       timeoutId = setTimeout(() => {
         clearTimeout(newsTimer);
-        goToStep(5); // avanzar a sala de video
+        goToStep(5);
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: VIDEOS CORPORATIVOS
       const vids = data?.videos || [];
-      if (vids.length === 0 && overrideStep !== 5 && !isEditorOpen && !isLivePreview) {
-        goToStep(6); // avanzar si no hay videos y no estamos editando
+      if (vids.length === 0 && overrideStep !== 5) {
+        goToStep(6);
         return;
       }
 
-      if (vids.length === 0 && overrideStep !== 5 && !isEditorOpen && !isLivePreview) {
-        timeoutId = setTimeout(() => goToStep(6), 5000);
-      }
-    } else if (currentStep === 6) { // PASO 6: CONVENIOS
+      timeoutId = setTimeout(() => {
+        goToStep(6);
+      }, rotationMs * 1.5);
+
+    } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
-      if (convenios.length === 0 && overrideStep !== 6 && !isEditorOpen && !isLivePreview) {
+      if (convenios.length === 0 && overrideStep !== 6) {
         goToStep(0);
         return;
       }
 
-      if (overrideStep !== 6 && !isEditorOpen && !isLivePreview) {
-        const rotationMs = Math.max(14000, Math.min(24000, convenios.length * 3500));
-        timeoutId = setTimeout(() => {
-          goToStep(0); // Reiniciar ciclo completo de la cartelera digital
-        }, rotationMs);
-      }
+      const conveniosDuration = Math.max(15000, Math.min(25000, convenios.length * 3500));
+      timeoutId = setTimeout(() => {
+        goToStep(0); // Reiniciar ciclo completo de la cartelera
+      }, conveniosDuration);
     }
 
     return () => {

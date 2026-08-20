@@ -182,9 +182,48 @@ let defaultData = {
   convenios: [
     {
       id: "c_1",
-      title: "Gimnasio SmartFit",
-      category: "Salud",
-      desc: "Descuento del 20% en mensualidades presentando tu carnet corporativo."
+      title: "Gimnasios SmartFit",
+      category: "Deportes y Salud",
+      discount: "20% Dcto",
+      description: "Accede a todas las sedes de SmartFit a nivel nacional sin cuota de inscripción para colaboradores de Pollo Fiesta y familiares.",
+      color: "#0EA5E9",
+      details: "Válido para plan Black presentando tu carnet institucional o certificado laboral."
+    },
+    {
+      id: "c_2",
+      title: "Cine Colombia & Entretenimiento",
+      category: "Recreación",
+      discount: "Tarifas Especiales",
+      description: "Boletas para funciones 2D y 3D con tarifas subsidiadas de caja de compensación Compensar.",
+      color: "#8B5CF6",
+      details: "Compra directa a través del portal de beneficios de Compensar o taquillas aliadas."
+    },
+    {
+      id: "c_3",
+      title: "Agencia de Viajes y Hoteles Compensar",
+      category: "Turismo",
+      discount: "Hasta 25% Dcto",
+      description: "Planes vacacionales, pasadías en Lagosol, Lagomar y destinos nacionales para ti y tu familia.",
+      color: "#0284C7",
+      details: "Descuentos aplicables en temporadas media y baja presentando vinculación activa."
+    },
+    {
+      id: "c_4",
+      title: "Universidad EAN & Formación",
+      category: "Educación",
+      discount: "15% en Matrículas",
+      description: "Descuentos en programas de pregrado, posgrados y diplomados virtuales y presenciales.",
+      color: "#10B981",
+      details: "Aplica para colaboradores y primer grado de consanguinidad."
+    },
+    {
+      id: "c_5",
+      title: "Red de Restaurantes y Gastronomía",
+      category: "Gastronomía",
+      discount: "Bonos Especiales",
+      description: "Convenios de alimentación y bonos con descuento en cadenas aliadas de restaurantes.",
+      color: "#F59E0B",
+      details: "Consulta la red de establecimientos aliados en la intranet de gestión humana."
     }
   ]
 };
@@ -206,7 +245,7 @@ module.exports = {
       // Patch old database structures to ensure all default modules exist
       const keysToPatch = ['hseq', 'hrModule', 'videos', 'convenios', 'events'];
       for (const key of keysToPatch) {
-        if (!store[key]) {
+        if (!store[key] || (Array.isArray(store[key]) && store[key].length === 0)) {
           store[key] = defaultData[key];
           updated = true;
         }
