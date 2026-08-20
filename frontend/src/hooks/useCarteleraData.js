@@ -2,14 +2,32 @@ import { useState, useEffect, useMemo } from 'react';
 import { getCartelera, updateCartelera, getWeather, getNews, getCumpleanos } from '../services/api';
 import { isThisMonth, isExactToday, isThisWeek } from '../utils/dateHelpers';
 
+const DEFAULT_CARTELERA_DATA = {
+  appTitle: 'POLLO FIESTA',
+  appSubtitle: 'Cartelera Digital',
+  topBar: {
+    marquesina: '🐔 POLLO FIESTA S.A. | ¡Comprometidos con la Calidad, Bioseguridad y Bienestar de Nuestros Colaboradores!'
+  },
+  events: [],
+  hrModule: [],
+  hseq: [],
+  videos: [],
+  convenios: [],
+  workers: []
+};
+
 export function useCarteleraData(previewData, isEditorOpen) {
   const [dataState, setDataState] = useState(() => {
     const saved = localStorage.getItem('pollo_fiesta_cartelera_data');
-    if (saved) { try { return JSON.parse(saved); } catch (_) { } }
-    return null;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (_) { }
+    }
+    return DEFAULT_CARTELERA_DATA;
   });
   
-  const data = previewData || dataState;
+  const data = previewData || dataState || DEFAULT_CARTELERA_DATA;
   const setData = setDataState;
 
   const [weather, setWeather] = useState(null);

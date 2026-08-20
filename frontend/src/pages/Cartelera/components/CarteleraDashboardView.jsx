@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import LiveClock from '../../../components/LiveClock';
 import {
@@ -10,6 +11,7 @@ export default function CarteleraDashboardView({
   birthdays,
   onOpenEditor
 }) {
+  const navigate = useNavigate();
   const totalEvents = data?.events?.length || 0;
   const totalHR = data?.hrModule?.length || 0;
   const totalBirthdays = birthdays?.length || 0;
@@ -110,7 +112,7 @@ export default function CarteleraDashboardView({
           whileHover={{ scale: 1.025, translateY: -6 }}
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          onClick={() => window.open('/cartelera/tv', '_blank')}
+          onClick={() => navigate('/cartelera/tv')}
           style={{
             background: 'linear-gradient(145deg, #0b4274 0%, #061c33 100%)',
             borderRadius: '28px',
