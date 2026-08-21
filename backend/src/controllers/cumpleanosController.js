@@ -5,19 +5,12 @@ const path = require('path');
 const csv = require('csv-parser');
 
 // ─── Constantes compartidas ─────────────────────────────────────────────────
-// Lista única de áreas excluidas del módulo de cumpleaños.
-// Usada en ambas funciones para garantizar consistencia entre
-// lo que se muestra en pantalla y lo que recibe correo.
-const AREAS_EXCLUIDAS = `'LYD','PRODUCCION','PRODUCCIÓN','TRANSPORTE','TRANSPORTES','VIGILANCIA','PUNTOS DE VENTA','LOGISTICA','LOGÍSTICA'`;
-
-// Criterio de admin unificado: se usa el mismo campo (r.codigo) en ambas funciones.
-const ADMIN_CONDITION = `r.codigo ILIKE '%ADMIN%'`;
+// Centros de Operación (C.O. / Empresa) elegibles para la cartelera de Gestión Humana
+const ALLOWED_CO = ['ADMINISTRACION', 'ADMINISTRACIÓN', 'UND FUNCIONAL ASADERO', 'ADMINISTR.PARA DISTRIBUIR', 'ADMINISTRACION PARA DISTRIBUIR'];
 
 // Zona horaria de Colombia — garantiza que "hoy" siempre sea correcto
 // sin importar la zona horaria del servidor donde corre el backend.
 const TZ = `'America/Bogota'`;
-
-const EXCLUDED_CSV_AREAS = ['LYD', 'PRODUCCION', 'PRODUCCIÓN', 'TRANSPORTE', 'TRANSPORTES', 'VIGILANCIA', 'PUNTOS DE VENTA', 'LOGISTICA', 'LOGÍSTICA'];
 
 const readEmpleadosCSV = () => {
   return new Promise((resolve, reject) => {
@@ -42,16 +35,16 @@ const readEmpleadosCSV = () => {
         const fechaNac = data['Fecha nacimiento del empleado']; 
         if (!fechaNac) return;
         
-        const areaOco = (data['Descripcion C.O.'] || data['Descripcion centro de costo'] || data['Area'] || '').trim().toUpperCase();
-        const isExcluded = EXCLUDED_CSV_AREAS.some(exc => areaOco.includes(exc));
+        const co = (data['Descripcion C.O.'] || '').trim().toUpperCase();
+        const isAllowed = ALLOWED_CO.some(allowed => co.includes(allowed));
         
-        if (!isExcluded) {
+        if (isAllowed) {
           seen.add(empId);
           results.push({
             id_persona: empId,
-            name: data['Nombre del empleado'],
+            name: (data['Nombre del empleado'] || '').trim(),
             birthDate: fechaNac,
-            email: data['Email del contacto']
+            email: data['Email del contacto'] || null
           });
         }
       })
@@ -101,30 +94,28 @@ const getCumpleanos = async (req, res) => {
           p.nombre_completo AS name,
           TO_CHAR(p.fecha_nacimiento, 'YYYY-MM-DD') AS "birthDate",
           p.correo AS email
-        FROM rrhh.persona p
-        WHERE p.estado = 'ACTIVO'
-          AND p.fecha_nacimiento IS NOT NULL
-          AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
-          AND (
-            -- Incluir si tiene rol admin
-            EXISTS (
-              SELECT 1
-              FROM master.usuario u
-              JOIN master.usuario_rol ur ON u.id_usuario = ur.id_usuario
-              JOIN master.rol r ON ur.id_rol = r.id_rol
-              WHERE u.id_persona = p.id_persona AND (${ADMIN_CONDITION})
+        FROM (
+          SELECT DISTINCT ON (p.id_persona)
+            p.id_persona,
+            p.nombre_completo,
+            p.fecha_nacimiento,
+            p.correo
+          FROM rrhh.persona p
+          JOIN rrhh.empleado e ON e.id_persona = p.id_persona
+          JOIN rrhh.contrato c ON c.id_empleado = e.id_empleado
+          JOIN operaciones.empresa emp ON c.id_empresa = emp.id_empresa
+          WHERE p.estado = 'ACTIVO'
+            AND p.fecha_nacimiento IS NOT NULL
+            AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
+            AND (
+              UPPER(emp.nombre) LIKE '%ADMINISTRACION%'
+              OR UPPER(emp.nombre) LIKE '%ADMINISTRACIÓN%'
+              OR UPPER(emp.nombre) LIKE '%UND FUNCIONAL ASADERO%'
+              OR UPPER(emp.nombre) LIKE '%ADMINISTR.PARA DISTRIBUIR%'
             )
-            OR
-            -- O si no pertenece a ninguna de las áreas excluidas
-            NOT EXISTS (
-              SELECT 1
-              FROM rrhh.persona_area pa
-              JOIN rrhh.area a ON pa.id_area = a.id_area
-              WHERE pa.id_persona = p.id_persona
-                AND UPPER(a.nombre) IN (${AREAS_EXCLUIDAS})
-            )
-          )
-        ORDER BY EXTRACT(DAY FROM p.fecha_nacimiento) ASC;
+          ORDER BY p.id_persona
+        ) p
+        ORDER BY EXTRACT(DAY FROM p.fecha_nacimiento) ASC, p.nombre_completo ASC;
       `);
     }
 
@@ -183,30 +174,29 @@ const sendBirthdayGreetings = async (req, res) => {
           p.nombre_completo AS name,
           TO_CHAR(p.fecha_nacimiento, 'YYYY-MM-DD') AS "birthDate",
           p.correo AS email
-        FROM rrhh.persona p
-        WHERE p.estado = 'ACTIVO'
-          AND p.fecha_nacimiento IS NOT NULL
-          AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
-          AND EXTRACT(DAY   FROM p.fecha_nacimiento) = EXTRACT(DAY   FROM (NOW() AT TIME ZONE ${TZ}))
-          AND (
-            -- Incluir si tiene rol admin
-            EXISTS (
-              SELECT 1
-              FROM master.usuario u
-              JOIN master.usuario_rol ur ON u.id_usuario = ur.id_usuario
-              JOIN master.rol r ON ur.id_rol = r.id_rol
-              WHERE u.id_persona = p.id_persona AND (${ADMIN_CONDITION})
+        FROM (
+          SELECT DISTINCT ON (p.id_persona)
+            p.id_persona,
+            p.nombre_completo,
+            p.fecha_nacimiento,
+            p.correo
+          FROM rrhh.persona p
+          JOIN rrhh.empleado e ON e.id_persona = p.id_persona
+          JOIN rrhh.contrato c ON c.id_empleado = e.id_empleado
+          JOIN operaciones.empresa emp ON c.id_empresa = emp.id_empresa
+          WHERE p.estado = 'ACTIVO'
+            AND p.fecha_nacimiento IS NOT NULL
+            AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
+            AND EXTRACT(DAY   FROM p.fecha_nacimiento) = EXTRACT(DAY   FROM (NOW() AT TIME ZONE ${TZ}))
+            AND (
+              UPPER(emp.nombre) LIKE '%ADMINISTRACION%'
+              OR UPPER(emp.nombre) LIKE '%ADMINISTRACIÓN%'
+              OR UPPER(emp.nombre) LIKE '%UND FUNCIONAL ASADERO%'
+              OR UPPER(emp.nombre) LIKE '%ADMINISTR.PARA DISTRIBUIR%'
             )
-            OR
-            -- O si no pertenece a ninguna de las áreas excluidas
-            NOT EXISTS (
-              SELECT 1
-              FROM rrhh.persona_area pa
-              JOIN rrhh.area a ON pa.id_area = a.id_area
-              WHERE pa.id_persona = p.id_persona
-                AND UPPER(a.nombre) IN (${AREAS_EXCLUIDAS})
-            )
-          );
+          ORDER BY p.id_persona
+        ) p
+        ORDER BY p.nombre_completo ASC;
       `);
     }
 
