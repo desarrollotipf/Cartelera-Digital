@@ -48,7 +48,11 @@ const FALLBACK_WEATHER = {
   },
   hourly: {
     time: [new Date().toISOString().substring(0, 13) + ":00"],
-    precipitation_probability: [15]
+    precipitation_probability: [15],
+    precipitation: [0],
+    relative_humidity_2m: [65],
+    cloud_cover: [30],
+    weathercode: [1]
   }
 };
 
@@ -63,8 +67,8 @@ const WEATHER_CACHE_TIME = 15 * 60 * 1000; // 15 minutos
 const DOLLAR_CACHE_TIME = 60 * 60 * 1000;  // 1 hora
 const NEWS_CACHE_TIME = 20 * 60 * 1000;    // 20 minutos
 
-// Open-Meteo API Bogotá (4.6097, -74.0817)
-const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true&hourly=precipitation_probability&timezone=America%2FBogota&forecast_days=1';
+// Open-Meteo API Bogotá (4.6097, -74.0817) con variables atmosféricas ampliadas
+const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true&hourly=precipitation_probability,precipitation,relative_humidity_2m,cloud_cover,weathercode&timezone=America%2FBogota&forecast_days=1';
 const DOLLAR_API_URL = 'https://open.er-api.com/v6/latest/USD';
 const NEWS_RSS_URL = 'https://news.google.com/rss/search?q=fenavi+colombia+OR+avicultura+colombia&hl=es-419&gl=CO&ceid=CO:es-419';
 

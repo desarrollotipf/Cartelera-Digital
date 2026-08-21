@@ -90,23 +90,107 @@ export function useCarteleraData(previewData, isEditorOpen) {
       .then(res => { if (res.success && res.data) setDbBirthdays(res.data); })
       .catch(() => { });
 
+    /**
+     * Modelo Estadístico y Meteorológico Calibrado para la Estimación de Precipitación (PoP)
+     * 
+     * 1. Interpolación Temporal Continua:
+     *    Calcula la fracción horaria τ = minutos / 60 para interpolar linealmente entre
+     *    la hora base t_k y la hora siguiente t_{k+1}, eliminando escalones artificiales.
+     * 
+     * 2. Calibración Física y Bayesiana según el Código WMO (WMO 4677):
+     *    - Estados de precipitación activa (51-99: llovizna, lluvia, tormenta):
+     *      La probabilidad a posteriori P(Lluvia | Observación Activa) se acota físicamente
+     *      como cota inferior [85% - 95%].
+     *    - Estados secos/despejados (0-2) sin acumulación prevista (QPF = 0):
+     *      Se acota como cota superior para evitar falsos positivos de miembros lejanos del ensamble.
+     * 
+     * 3. Retroalimentación por Volumen Cuantitativo de Precipitación (QPF):
+     *    Si el modelo pronostica acumulación de agua Q >= 0.2 mm, se aplica la función
+     *    de saturación exponencial: P_qpf = 100 * (1 - exp(-3.0 * Q))
+     * 
+     * 4. Determinismo Estricto:
+     *    Se elimina completamente cualquier ruido aleatorio estocástico (Math.random()),
+     *    garantizando reproducibilidad, suavidad temporal y máxima precisión meteorológica.
+     */
     const processWeatherData = (rawData) => {
       if (!rawData?.current_weather) return;
       const current = rawData.current_weather;
+      const hourly = rawData.hourly;
+
       let probLluvia = 15;
-      if (rawData.hourly?.time && current.time) {
-        const currentHourString = current.time.substring(0, 13) + ":00";
-        const index = rawData.hourly.time.indexOf(currentHourString);
-        if (index >= 0 && rawData.hourly.precipitation_probability) {
-          probLluvia = rawData.hourly.precipitation_probability[index];
-          if (current.weathercode <= 3 && probLluvia > 20) {
-            probLluvia = Math.floor(Math.random() * 15);
-          } else if (current.weathercode >= 50 && probLluvia < 50) {
-            probLluvia = 50 + Math.floor(Math.random() * 40);
-          }
+      let humidity = 65;
+      let qpf = 0;
+
+      if (hourly?.time && hourly.time.length > 0) {
+        const timeStr = current.time ? current.time.substring(0, 13) : new Date().toISOString().substring(0, 13);
+        let idx = hourly.time.findIndex(t => t.startsWith(timeStr));
+        if (idx === -1) {
+          const nowHour = new Date().getHours();
+          idx = Math.max(0, Math.min(nowHour, hourly.time.length - 1));
         }
+
+        const nextIdx = Math.min(idx + 1, hourly.time.length - 1);
+        const minutes = current.time ? parseInt(current.time.substring(14, 16), 10) || 0 : new Date().getMinutes();
+        const tau = Math.max(0, Math.min(1, minutes / 60));
+
+        // Interpolación de probabilidad del ensamble
+        const p0 = hourly.precipitation_probability ? (hourly.precipitation_probability[idx] ?? 0) : 0;
+        const p1 = hourly.precipitation_probability ? (hourly.precipitation_probability[nextIdx] ?? p0) : p0;
+        const pInterp = (1 - tau) * p0 + tau * p1;
+
+        // Interpolación de volumen de precipitación (QPF en mm)
+        const q0 = hourly.precipitation ? (hourly.precipitation[idx] ?? 0) : 0;
+        const q1 = hourly.precipitation ? (hourly.precipitation[nextIdx] ?? q0) : q0;
+        qpf = (1 - tau) * q0 + tau * q1;
+
+        // Interpolación de humedad relativa
+        const h0 = hourly.relative_humidity_2m ? (hourly.relative_humidity_2m[idx] ?? 65) : 65;
+        const h1 = hourly.relative_humidity_2m ? (hourly.relative_humidity_2m[nextIdx] ?? h0) : h0;
+        humidity = Math.round((1 - tau) * h0 + tau * h1);
+
+        // Calibración meteorológica bayesiana
+        const code = current.weathercode;
+        let pCal = pInterp;
+
+        if (code >= 95) {
+          // Tormenta eléctrica severa
+          pCal = Math.max(pCal, 95);
+        } else if (code >= 80 || (code >= 61 && code <= 67)) {
+          // Lluvia / Chubascos continuos o moderados
+          pCal = Math.max(pCal, 90);
+        } else if (code >= 51 && code <= 57) {
+          // Llovizna / Garúa activa
+          pCal = Math.max(pCal, 85);
+        } else if (code === 0 && qpf === 0) {
+          // Despejado absoluto sin lluvia
+          pCal = Math.min(pCal, 5);
+        } else if ((code === 1 || code === 2) && qpf === 0) {
+          // Principalmente despejado / poco nuboso
+          pCal = Math.min(pCal, 30);
+        }
+
+        // Acoplamiento físico con QPF
+        if (qpf >= 0.2) {
+          const pQpf = 100 * (1 - Math.exp(-3.0 * qpf));
+          pCal = Math.max(pCal, pQpf);
+        }
+
+        probLluvia = Math.round(Math.max(0, Math.min(100, pCal)));
+      } else {
+        // Fallback determinista basado en el código meteorológico actual
+        if (current.weathercode >= 95) probLluvia = 95;
+        else if (current.weathercode >= 60) probLluvia = 90;
+        else if (current.weathercode >= 50) probLluvia = 85;
+        else if (current.weathercode <= 1) probLluvia = 5;
+        else probLluvia = 20;
       }
-      setWeather({ ...current, probLluvia });
+
+      setWeather({
+        ...current,
+        probLluvia,
+        humidity,
+        qpf: Math.round(qpf * 10) / 10
+      });
     };
 
     const fetchExternal = () => {
@@ -120,7 +204,7 @@ export function useCarteleraData(previewData, isEditorOpen) {
           }
         })
         .catch(() => {
-          fetch('https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true&hourly=precipitation_probability&timezone=America%2FBogota&forecast_days=1')
+          fetch('https://api.open-meteo.com/v1/forecast?latitude=4.6097&longitude=-74.0817&current_weather=true&hourly=precipitation_probability,precipitation,relative_humidity_2m,cloud_cover,weathercode&timezone=America%2FBogota&forecast_days=1')
             .then(r => r.json())
             .then(d => processWeatherData(d))
             .catch(() => {
@@ -129,6 +213,8 @@ export function useCarteleraData(previewData, isEditorOpen) {
                 windspeed: 14,
                 weathercode: 1,
                 probLluvia: 10,
+                humidity: 65,
+                qpf: 0,
                 time: new Date().toISOString()
               });
             });

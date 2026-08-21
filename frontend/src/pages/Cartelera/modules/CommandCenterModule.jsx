@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CloudSun, Sun, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning,
-  MapPin, Wind, Newspaper 
+  MapPin, Wind, Newspaper, Droplets 
 } from 'lucide-react';
 
 function getWeatherDetails(code) {
@@ -71,10 +71,16 @@ const CommandCenterModule = ({
                     <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.8rem 1.2rem', borderRadius: 'var(--radius-lg)', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}>
                       <MapPin size={18} color="#f43f5e" /> Bogotá, Colombia
                     </div>
-                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.8rem 1.2rem', borderRadius: 'var(--radius-lg)', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}>
-                      <Wind size={18} color="#38bdf8" /> {weather.windspeed} km/h
-                      <span style={{ margin: '0 0.5rem', color: 'var(--border)' }}>|</span>
-                      <CloudRain size={18} color="#38bdf8" /> Prob. Lluvia: {weather.probLluvia !== undefined ? `${weather.probLluvia}%` : 'N/A'}
+                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.8rem 1.2rem', borderRadius: 'var(--radius-lg)', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', flexWrap: 'wrap', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><Wind size={18} color="#38bdf8" /> {weather.windspeed} km/h</span>
+                      <span style={{ margin: '0 0.3rem', color: 'var(--border)' }}>|</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><CloudRain size={18} color="#38bdf8" /> Prob. Lluvia: {weather.probLluvia !== undefined ? `${weather.probLluvia}%` : 'N/A'}</span>
+                      {weather.humidity !== undefined && (
+                        <>
+                          <span style={{ margin: '0 0.3rem', color: 'var(--border)' }}>|</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}><Droplets size={18} color="#38bdf8" /> Humedad: {weather.humidity}%</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
