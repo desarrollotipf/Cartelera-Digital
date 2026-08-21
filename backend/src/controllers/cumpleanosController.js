@@ -4,7 +4,20 @@ const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 
+// ─── Constantes compartidas ─────────────────────────────────────────────────
+// Lista única de áreas excluidas del módulo de cumpleaños.
+// Usada en ambas funciones para garantizar consistencia entre
+// lo que se muestra en pantalla y lo que recibe correo.
+const AREAS_EXCLUIDAS = `'LYD','PRODUCCION','PRODUCCIÓN','TRANSPORTE','TRANSPORTES','VIGILANCIA','PUNTOS DE VENTA','LOGISTICA','LOGÍSTICA'`;
+
+// Criterio de admin unificado: se usa el mismo campo (r.codigo) en ambas funciones.
+const ADMIN_CONDITION = `r.codigo ILIKE '%ADMIN%'`;
+
+// Zona horaria de Colombia — garantiza que "hoy" siempre sea correcto
+// sin importar la zona horaria del servidor donde corre el backend.
 const TZ = `'America/Bogota'`;
+
+const EXCLUDED_CSV_AREAS = ['LYD', 'PRODUCCION', 'PRODUCCIÓN', 'TRANSPORTE', 'TRANSPORTES', 'VIGILANCIA', 'PUNTOS DE VENTA', 'LOGISTICA', 'LOGÍSTICA'];
 
 const readEmpleadosCSV = () => {
   return new Promise((resolve, reject) => {
@@ -29,14 +42,10 @@ const readEmpleadosCSV = () => {
         const fechaNac = data['Fecha nacimiento del empleado']; 
         if (!fechaNac) return;
         
-        const co = (data['Descripcion C.O.'] || '').trim().toUpperCase();
+        const areaOco = (data['Descripcion C.O.'] || data['Descripcion centro de costo'] || data['Area'] || '').trim().toUpperCase();
+        const isExcluded = EXCLUDED_CSV_AREAS.some(exc => areaOco.includes(exc));
         
-        const isAllowedCO = 
-          co.includes('ADMINISTRACION') || 
-          co.includes('UND FUNCIONAL ASADERO') || 
-          co.includes('ADMINISTR.PARA DISTRIBUIR');
-        
-        if (isAllowedCO) {
+        if (!isExcluded) {
           seen.add(empId);
           results.push({
             id_persona: empId,
@@ -104,16 +113,24 @@ const getCumpleanos = async (req, res) => {
         WHERE p.estado = 'ACTIVO'
           AND p.fecha_nacimiento IS NOT NULL
           AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
-          AND EXISTS (
-            SELECT 1
-            FROM rrhh.persona_area pa
-            JOIN rrhh.area a ON pa.id_area = a.id_area
-            WHERE pa.id_persona = p.id_persona
-              AND (
-                UPPER(a.nombre) LIKE '%ADMINISTRACION%' OR 
-                UPPER(a.nombre) LIKE '%UND FUNCIONAL ASADERO%' OR 
-                UPPER(a.nombre) LIKE '%ADMINISTR.PARA DISTRIBUIR%'
-              )
+          AND (
+            -- Incluir si tiene rol admin
+            EXISTS (
+              SELECT 1
+              FROM master.usuario u
+              JOIN master.usuario_rol ur ON u.id_usuario = ur.id_usuario
+              JOIN master.rol r ON ur.id_rol = r.id_rol
+              WHERE u.id_persona = p.id_persona AND (${ADMIN_CONDITION})
+            )
+            OR
+            -- O si no pertenece a ninguna de las áreas excluidas
+            NOT EXISTS (
+              SELECT 1
+              FROM rrhh.persona_area pa
+              JOIN rrhh.area a ON pa.id_area = a.id_area
+              WHERE pa.id_persona = p.id_persona
+                AND UPPER(a.nombre) IN (${AREAS_EXCLUIDAS})
+            )
           )
         ORDER BY EXTRACT(DAY FROM p.fecha_nacimiento) ASC;
       `);
@@ -179,16 +196,24 @@ const sendBirthdayGreetings = async (req, res) => {
           AND p.fecha_nacimiento IS NOT NULL
           AND EXTRACT(MONTH FROM p.fecha_nacimiento) = EXTRACT(MONTH FROM (NOW() AT TIME ZONE ${TZ}))
           AND EXTRACT(DAY   FROM p.fecha_nacimiento) = EXTRACT(DAY   FROM (NOW() AT TIME ZONE ${TZ}))
-          AND EXISTS (
-            SELECT 1
-            FROM rrhh.persona_area pa
-            JOIN rrhh.area a ON pa.id_area = a.id_area
-            WHERE pa.id_persona = p.id_persona
-              AND (
-                UPPER(a.nombre) LIKE '%ADMINISTRACION%' OR 
-                UPPER(a.nombre) LIKE '%UND FUNCIONAL ASADERO%' OR 
-                UPPER(a.nombre) LIKE '%ADMINISTR.PARA DISTRIBUIR%'
-              )
+          AND (
+            -- Incluir si tiene rol admin
+            EXISTS (
+              SELECT 1
+              FROM master.usuario u
+              JOIN master.usuario_rol ur ON u.id_usuario = ur.id_usuario
+              JOIN master.rol r ON ur.id_rol = r.id_rol
+              WHERE u.id_persona = p.id_persona AND (${ADMIN_CONDITION})
+            )
+            OR
+            -- O si no pertenece a ninguna de las áreas excluidas
+            NOT EXISTS (
+              SELECT 1
+              FROM rrhh.persona_area pa
+              JOIN rrhh.area a ON pa.id_area = a.id_area
+              WHERE pa.id_persona = p.id_persona
+                AND UPPER(a.nombre) IN (${AREAS_EXCLUIDAS})
+            )
           );
       `);
     }

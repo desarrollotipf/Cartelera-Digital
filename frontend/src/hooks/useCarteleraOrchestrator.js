@@ -53,6 +53,7 @@ export function useCarteleraOrchestrator(
     const curData = dataRef.current;
     const curBirthdays = birthdaysRef.current;
     const curWeekly = weeklyBirthdaysRef.current;
+    const validVideosCount = (curData?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools')).length;
 
     let targetStep = nextStep;
     let attempts = 0;
@@ -65,7 +66,7 @@ export function useCarteleraOrchestrator(
       else if (targetStep === 2) isValid = curBirthdays.length > 0 || curWeekly.length > 0;
       else if (targetStep === 3) isValid = (curData?.hseq?.length || 0) > 0;
       else if (targetStep === 4) isValid = true; // Clima / Noticias
-      else if (targetStep === 5) isValid = (curData?.videos?.length || 0) > 0;
+      else if (targetStep === 5) isValid = validVideosCount > 0;
       else if (targetStep === 6) isValid = (curData?.convenios?.length || 0) > 0;
 
       if (isValid) break;
@@ -227,7 +228,7 @@ export function useCarteleraOrchestrator(
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: VIDEOS CORPORATIVOS
-      const vids = data?.videos || [];
+      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
       if (vids.length === 0 && overrideStep !== 5) {
         goToStep(6);
         return;

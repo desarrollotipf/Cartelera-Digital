@@ -5,72 +5,108 @@ const axios = require('axios');
 
 /**
  * Consulta el área real de la persona en el esquema rrhh (tablas persona_area y area)
- * y asigna el scope de acceso correspondiente (HSEQ, RRHH o ADMIN)
+ * o en el perfil devuelto por el Portal FIA y asigna el scope de acceso correspondiente (HSEQ, RRHH o ADMIN)
  */
-async function getUserAreaInfo(userId, email, username) {
+async function getUserAreaInfo(userId, email, username, portalUserData = {}) {
   try {
-    if (!isDbConnected()) {
-      return { userScope: 'RRHH', areaName: 'Talento Humano' };
+    // 1. Primero verificar si en los datos recibidos del Portal FIA viene el área HSEQ
+    const portalAreaStr = String(
+      portalUserData.areaName ||
+      (typeof portalUserData.area === 'string' ? portalUserData.area : portalUserData.area?.nombre || portalUserData.area?.name) ||
+      portalUserData.area_nombre ||
+      portalUserData.nombre_area ||
+      ''
+    ).toUpperCase();
+
+    const portalRoleStr = String(portalUserData.role || portalUserData.cargo || portalUserData.rol || '').toUpperCase();
+
+    let portalHasHseq = (
+      portalAreaStr.includes('HSEQ') ||
+      portalAreaStr.includes('SST') ||
+      portalAreaStr.includes('SEGURIDAD') ||
+      portalAreaStr.includes('AMBIENTAL') ||
+      portalRoleStr.includes('HSEQ') ||
+      portalRoleStr.includes('SST')
+    );
+
+    if (Array.isArray(portalUserData.areas)) {
+      const hasHseqInList = portalUserData.areas.some(a => {
+        const name = String(typeof a === 'string' ? a : a?.nombre || a?.name || '').toUpperCase();
+        return name.includes('HSEQ') || name.includes('SST') || name.includes('SEGURIDAD') || name.includes('AMBIENTAL');
+      });
+      if (hasHseqInList) portalHasHseq = true;
     }
 
-    const [rows] = await sequelize.query(`
-      SELECT 
-        u.id_usuario,
-        u.username,
-        u.email,
-        p.id_persona,
-        p.nombre_completo,
-        a.id_area,
-        a.nombre AS area_nombre
-      FROM master.usuario u
-      LEFT JOIN rrhh.persona p ON u.id_persona = p.id_persona
-      LEFT JOIN rrhh.persona_area pa ON p.id_persona = pa.id_persona
-      LEFT JOIN rrhh.area a ON pa.id_area = a.id_area
-      WHERE ${userId ? 'u.id_usuario = :userId' : '(LOWER(u.email) = LOWER(:email) OR u.username = :username)'}
-      LIMIT 1
-    `, {
-      replacements: { 
-        userId: userId ? Number(userId) : null, 
-        email: email || null,
-        username: username || null
-      }
-    });
-
-    if (rows && rows.length > 0) {
-      const row = rows[0];
-      const areaName = (row.area_nombre || '').toUpperCase();
-      const areaId = row.id_area ? Number(row.id_area) : null;
-      let userScope = 'RRHH'; // Default Talento Humano / General
-
-      if (
-        areaId === 1 ||
-        areaName.includes('HSEQ') ||
-        areaName.includes('SST') ||
-        areaName.includes('SEGURIDAD') ||
-        areaName.includes('AMBIENTAL')
-      ) {
-        userScope = 'HSEQ';
-      } else if (
-        areaId === 4 ||
-        areaName.includes('TALENTO') ||
-        areaName.includes('HUMANA') ||
-        areaName.includes('RECURSOS')
-      ) {
-        userScope = 'RRHH';
-      } else if (
-        areaId === 12 ||
-        areaName.includes('SISTEMAS') ||
-        areaName.includes('ADMIN')
-      ) {
-        userScope = 'ADMIN';
-      }
-
+    if (portalHasHseq) {
       return {
-        areaId: row.id_area,
-        areaName: row.area_nombre || 'Talento Humano',
-        personName: row.nombre_completo,
-        userScope
+        areaId: 1,
+        areaName: portalUserData.areaName || (typeof portalUserData.area === 'string' ? portalUserData.area : portalUserData.area?.nombre) || 'HSEQ',
+        personName: portalUserData.name || portalUserData.nombre_completo || username,
+        userScope: 'HSEQ'
       };
+    }
+
+    // 2. Si no viene en portalUserData o no es HSEQ, consultar base de datos si está conectada
+    if (isDbConnected()) {
+      const [rows] = await sequelize.query(`
+        SELECT 
+          u.id_usuario,
+          u.username,
+          u.email,
+          p.id_persona,
+          p.nombre_completo,
+          a.id_area,
+          a.nombre AS area_nombre
+        FROM master.usuario u
+        LEFT JOIN rrhh.persona p ON u.id_persona = p.id_persona
+        LEFT JOIN rrhh.persona_area pa ON p.id_persona = pa.id_persona
+        LEFT JOIN rrhh.area a ON pa.id_area = a.id_area
+        WHERE ${userId ? 'u.id_usuario = :userId' : '(LOWER(u.email) = LOWER(:email) OR u.username = :username)'}
+        LIMIT 1
+      `, {
+        replacements: { 
+          userId: userId ? Number(userId) : null, 
+          email: email || null,
+          username: username || null
+        }
+      });
+
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        const areaName = (row.area_nombre || '').toUpperCase();
+        const areaId = row.id_area ? Number(row.id_area) : null;
+        let userScope = 'RRHH'; // Default Talento Humano / General
+
+        if (
+          areaId === 1 ||
+          areaName.includes('HSEQ') ||
+          areaName.includes('SST') ||
+          areaName.includes('SEGURIDAD') ||
+          areaName.includes('AMBIENTAL')
+        ) {
+          userScope = 'HSEQ';
+        } else if (
+          areaId === 4 ||
+          areaName.includes('TALENTO') ||
+          areaName.includes('HUMANA') ||
+          areaName.includes('RECURSOS')
+        ) {
+          userScope = 'RRHH';
+        } else if (
+          areaId === 12 ||
+          areaName.includes('SISTEMAS') ||
+          areaName.includes('ADMIN')
+        ) {
+          userScope = 'ADMIN';
+        }
+
+        return {
+          areaId: row.id_area,
+          areaName: row.area_nombre || 'Talento Humano',
+          personName: row.nombre_completo,
+          userScope
+        };
+      }
     }
   } catch (err) {
     console.warn(' [Auth] Error consultando rrhh.persona_area:', err.message);
@@ -109,7 +145,7 @@ const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'El usuario se encuentra inactivo' });
     }
 
-    const areaInfo = await getUserAreaInfo(user.id, user.email, user.username);
+    const areaInfo = await getUserAreaInfo(user.id, user.email, user.username, user);
 
     res.json({
       success: true,
@@ -150,8 +186,8 @@ const redeemOtt = async (req, res) => {
 
     const { accessToken, refreshToken, user } = response.data;
 
-    // 2. Consultar área en rrhh.persona_area
-    const areaInfo = await getUserAreaInfo(userId, user?.email, user?.username);
+    // 2. Consultar área en rrhh.persona_area o portalUserData
+    const areaInfo = await getUserAreaInfo(userId, user?.email, user?.username, user);
 
     const enrichedUser = {
       ...user,
@@ -173,3 +209,4 @@ const redeemOtt = async (req, res) => {
 };
 
 module.exports = { login, redeemOtt, getUserAreaInfo };
+

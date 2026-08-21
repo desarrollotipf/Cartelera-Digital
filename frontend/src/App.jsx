@@ -6,6 +6,7 @@ import ConveniosCompensarPage from './pages/ConveniosCompensarPage';
 import HseqPage from './pages/HseqPage';
 import HseqTvKioskPage from './pages/HseqTvKioskPage';
 import { usePortalAuth } from './hooks/usePortalAuth';
+import { isHseqScope, isAdminScope } from './utils/authUtils';
 
 const PORTAL_FRONTEND = import.meta.env.VITE_PORTAL_FRONTEND_URL || 'https://portal.pollo-fiesta.com';
 
@@ -119,10 +120,23 @@ function AuthGuard({ children }) {
 
 function AppRoutes() {
   const location = useLocation();
-  const title = PAGE_TITLES[location.pathname] || 'Gestión Humana';
+  const { user } = usePortalAuth();
+
+  const isHseq = isHseqScope(user);
+  const isAdmin = isAdminScope(user);
+
+  const defaultHome = isHseq && !isAdmin ? '/hseq' : '/cartelera';
+  const title = PAGE_TITLES[location.pathname] || (isHseq && !isAdmin ? 'Normativas HSEQ' : 'Gestión Humana');
 
   // TV Kiosk: standalone page without layout
   if (location.pathname === '/cartelera/tv' || location.pathname === '/tv') {
+    if (isHseq && !isAdmin) {
+      return (
+        <div style={{ padding: 0, margin: 0, width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: "#F0F4FA url('/images/fondo-pantalla.png') center/100% 100% fixed no-repeat" }}>
+          <HseqTvKioskPage />
+        </div>
+      );
+    }
     return (
       <div style={{ padding: 0, margin: 0, width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: "#F0F4FA url('/images/fondo-pantalla.png') center/100% 100% fixed no-repeat" }}>
         <TvKioskPage />
@@ -142,12 +156,21 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout title={title} />}>
-        <Route path="/" element={<Navigate to="/cartelera" replace />} />
-        <Route path="/cartelera" element={<CarteleraPage />} />
-        <Route path="/convenios" element={<ConveniosCompensarPage />} />
-        <Route path="/hseq" element={<HseqPage />} />
+        <Route path="/" element={<Navigate to={defaultHome} replace />} />
+        <Route 
+          path="/cartelera" 
+          element={isHseq && !isAdmin ? <Navigate to="/hseq" replace /> : <CarteleraPage />} 
+        />
+        <Route 
+          path="/convenios" 
+          element={isHseq && !isAdmin ? <Navigate to="/hseq" replace /> : <ConveniosCompensarPage />} 
+        />
+        <Route 
+          path="/hseq" 
+          element={!isHseq && !isAdmin ? <Navigate to="/cartelera" replace /> : <HseqPage />} 
+        />
       </Route>
-      <Route path="*" element={<Navigate to="/cartelera" replace />} />
+      <Route path="*" element={<Navigate to={defaultHome} replace />} />
     </Routes>
   );
 }

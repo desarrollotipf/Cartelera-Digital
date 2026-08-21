@@ -21,9 +21,9 @@ const VideosModule = ({
   // Registro de URLs de videos con fallos, bloqueos o errores de embed para excluirlos automáticamente
   const [failedUrls, setFailedUrls] = React.useState(new Set());
 
-  // Lista de videos limpios y 100% funcionales
+  // Lista de videos limpios y 100% funcionales (excluyendo cualquier video de demostración o caído)
   const validVideos = React.useMemo(() => {
-    return (data?.videos || []).filter(v => v?.url && !failedUrls.has(v.url.trim()));
+    return (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !failedUrls.has(v.url.trim()));
   }, [data?.videos, failedUrls]);
 
   const handleVideoEnded = React.useCallback(() => {
@@ -134,8 +134,7 @@ const VideosModule = ({
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
     if (validVideos.length === 0) {
       if (isTVMode) {
-        const timer = setTimeout(() => goToStep(6), 2000);
-        return () => clearTimeout(timer);
+        goToStep(6);
       }
       return;
     }
@@ -144,10 +143,8 @@ const VideosModule = ({
     const activeVid = validVideos[activeIdx];
     
     if (!activeVid?.url) {
-      const timer = setTimeout(() => {
-        handleVideoEnded();
-      }, 3000);
-      return () => clearTimeout(timer);
+      handleVideoEnded();
+      return;
     } else if (activeVid.url.includes('tiktok.com') && !activeVid.url.startsWith('/uploads')) {
       // Las URLs directas de TikTok son bloqueadas por TikTok ('overload-protect'). Descartar de inmediato para no congelar la pantalla.
       console.warn('[VideosModule] Descartando embed crudo de TikTok bloqueado:', activeVid.url);
