@@ -69,40 +69,32 @@ const getCumpleanos = async (req, res) => {
   try {
     let results = [];
 
-    if (process.env.USE_LOCAL_CSV === 'true') {
-      const currentMonth = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota", month: "numeric" });
-      const allEmpleados = await readEmpleadosCSV();
-      results = allEmpleados.filter(e => {
-        const parts = e.birthDate.split('-');
-        if (parts.length >= 2) {
-           return parseInt(parts[1], 10) === parseInt(currentMonth, 10);
-        }
-        return false;
-      });
-      // Ordenar por día
-      results.sort((a, b) => {
-         const dayA = parseInt(a.birthDate.split('-')[2], 10) || 0;
-         const dayB = parseInt(b.birthDate.split('-')[2], 10) || 0;
-         return dayA - dayB;
-      });
-    } else {
-      if (!isDbConnected()) {
-        const todayIso = new Date().toISOString().split('T')[0];
-        return res.json({
-          success: true,
-          data: [
-            {
-              id: 'mock-1',
-              personId: '1001',
-              type: 'birthday',
-              name: 'Juan Perez (Simulado)',
-              email: 'juan@pollofiesta.com',
-              birthDate: todayIso
-            }
-          ]
-        });
-      }
+    const csvPath = path.join(__dirname, '../data/empleados.csv');
+    const shouldUseCsv = process.env.USE_LOCAL_CSV === 'true' && fs.existsSync(csvPath);
 
+    if (shouldUseCsv) {
+      try {
+        const currentMonth = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota", month: "numeric" });
+        const allEmpleados = await readEmpleadosCSV();
+        results = allEmpleados.filter(e => {
+          const parts = e.birthDate.split('-');
+          if (parts.length >= 2) {
+             return parseInt(parts[1], 10) === parseInt(currentMonth, 10);
+          }
+          return false;
+        });
+        results.sort((a, b) => {
+           const dayA = parseInt(a.birthDate.split('-')[2], 10) || 0;
+           const dayB = parseInt(b.birthDate.split('-')[2], 10) || 0;
+           return dayA - dayB;
+        });
+      } catch (csvErr) {
+        console.warn('Error leyendo CSV, pasando a consulta en base de datos:', csvErr.message);
+      }
+    }
+
+    // Si no usó CSV o el CSV no arrojó registros y la base de datos está conectada:
+    if (results.length === 0 && isDbConnected()) {
       [results] = await sequelize.query(`
         SELECT
           p.id_persona,
@@ -162,29 +154,29 @@ const sendBirthdayGreetings = async (req, res) => {
   try {
     let results = [];
     
-    if (process.env.USE_LOCAL_CSV === 'true') {
-      const bogotaDate = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
-      const currentMonth = new Date(bogotaDate).getMonth() + 1;
-      const currentDay = new Date(bogotaDate).getDate();
+    const csvPath = path.join(__dirname, '../data/empleados.csv');
+    const shouldUseCsv = process.env.USE_LOCAL_CSV === 'true' && fs.existsSync(csvPath);
 
-      const allEmpleados = await readEmpleadosCSV();
-      results = allEmpleados.filter(e => {
-        const parts = e.birthDate.split('-');
-        if (parts.length >= 3) {
-           return parseInt(parts[1], 10) === currentMonth && parseInt(parts[2], 10) === currentDay;
-        }
-        return false;
-      });
-    } else {
-      if (!isDbConnected()) {
-        return res.json({
-          success: true,
-          message: 'Proceso de felicitaciones SIMULADO (Base de datos desconectada)',
-          count: 0,
-          details: []
+    if (shouldUseCsv) {
+      try {
+        const bogotaDate = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
+        const currentMonth = new Date(bogotaDate).getMonth() + 1;
+        const currentDay = new Date(bogotaDate).getDate();
+
+        const allEmpleados = await readEmpleadosCSV();
+        results = allEmpleados.filter(e => {
+          const parts = e.birthDate.split('-');
+          if (parts.length >= 3) {
+             return parseInt(parts[1], 10) === currentMonth && parseInt(parts[2], 10) === currentDay;
+          }
+          return false;
         });
+      } catch (csvErr) {
+        console.warn('Error leyendo CSV para envíos, pasando a BD:', csvErr.message);
       }
+    }
 
+    if (results.length === 0 && isDbConnected()) {
       [results] = await sequelize.query(`
         SELECT
           p.id_persona,
