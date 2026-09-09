@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getCarteleraData, updateCarteleraData } = require('../controllers/carteleraController');
+const { getCarteleraData, updateCarteleraData, streamCartelera } = require('../controllers/carteleraController');
+
+// GET  /api/cartelera/stream - Transmisión en tiempo real vía Server-Sent Events (SSE)
+router.get('/stream', streamCartelera);
 
 // GET  /api/cartelera  - Obtener datos actuales de la cartelera
 router.get('/', getCarteleraData);

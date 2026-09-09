@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getCartelera, updateCartelera, getWeather, getNews, getCumpleanos } from '../services/api';
+import { getCartelera, updateCartelera, getWeather, getNews, getCumpleanos, getApiBase } from '../services/api';
 import { isThisMonth, isExactToday, isThisWeek } from '../utils/dateHelpers';
 
 const DEFAULT_CARTELERA_DATA = {
@@ -212,7 +212,73 @@ export function useCarteleraData(previewData, isEditorOpen) {
     return () => clearInterval(extId);
   }, []);
 
-  // Auto-sync cada 5s cuando el editor no está abierto, para sincronización instantánea entre todos los usuarios y pantallas
+  // 1. Sincronización en tiempo real vía Server-Sent Events (SSE) entre diferentes computadores y pantallas
+  useEffect(() => {
+    let eventSource = null;
+    let reconnectTimer = null;
+
+    const connectSSE = () => {
+      try {
+        const base = getApiBase();
+        eventSource = new EventSource(`${base}/cartelera/stream`);
+
+        eventSource.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.type === 'CARTELERA_UPDATED' && parsed.data) {
+              setData(parsed.data);
+              localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(parsed.data));
+            }
+          } catch (_) { }
+        };
+
+        eventSource.onerror = () => {
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          // Reconectar automáticamente si se interrumpe el canal
+          reconnectTimer = setTimeout(connectSSE, 3000);
+        };
+      } catch (_) { }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (eventSource) eventSource.close();
+    };
+  }, []);
+
+  // 2. Sincronización instantánea entre pestañas / ventanas en el mismo navegador (< 1ms)
+  useEffect(() => {
+    let channel = null;
+    try {
+      channel = new BroadcastChannel('pollo_fiesta_cartelera_sync');
+      channel.onmessage = (e) => {
+        if (e.data?.type === 'CARTELERA_UPDATED' && e.data?.data) {
+          setData(e.data.data);
+        }
+      };
+    } catch (_) { }
+
+    const handleStorage = (e) => {
+      if (e.key === 'pollo_fiesta_cartelera_data' && e.newValue) {
+        try {
+          setData(JSON.parse(e.newValue));
+        } catch (_) { }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  // 3. Auto-sync polling de respaldo cada 4s y en evento de visibilidad
   useEffect(() => {
     const syncData = () => {
       if (!isEditorOpen) {
@@ -243,7 +309,7 @@ export function useCarteleraData(previewData, isEditorOpen) {
       }
     };
 
-    const id = setInterval(syncData, 5000);
+    const id = setInterval(syncData, 4000);
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') syncData();
@@ -259,11 +325,26 @@ export function useCarteleraData(previewData, isEditorOpen) {
   const handleSaveData = async (newData, scope = null) => {
     setData(newData);
     localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(newData));
+
+    // Difusión instantánea local
+    try {
+      const channel = new BroadcastChannel('pollo_fiesta_cartelera_sync');
+      channel.postMessage({ type: 'CARTELERA_UPDATED', data: newData });
+      channel.close();
+    } catch (_) { }
+
     try {
       const res = await updateCartelera(newData, scope);
       if (res?.success && res?.data) {
         setData(res.data);
         localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(res.data));
+
+        try {
+          const channel = new BroadcastChannel('pollo_fiesta_cartelera_sync');
+          channel.postMessage({ type: 'CARTELERA_UPDATED', data: res.data });
+          channel.close();
+        } catch (_) { }
+
         return res.data;
       }
       return res;
