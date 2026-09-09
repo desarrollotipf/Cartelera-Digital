@@ -175,12 +175,7 @@ const VideosModule = ({
                 </div>
               );
             }
-            // Garantizar al menos 3 tarjetas para que el arco 3D y el abanico siempre luzcan espectaculares
-            const orbitalDeck = rawVideos.length >= 3 ? rawVideos : [
-              ...rawVideos,
-              { id: 'promo_1', name: 'Sala de Cine Pollo Fiesta', isPromo: true, img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80', title: 'Experiencia Cinemática' },
-              { id: 'promo_2', name: 'Comunicados y Cultura', isPromo: true, img: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&auto=format&fit=crop&q=80', title: 'Gestión Humana y Operaciones' },
-            ].slice(0, Math.max(rawVideos.length + 2, 3));
+            const orbitalDeck = rawVideos;
 
             const activeIdx = (videoIndex % rawVideos.length);
 

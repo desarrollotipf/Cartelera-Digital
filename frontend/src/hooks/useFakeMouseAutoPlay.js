@@ -52,30 +52,30 @@ export function useFakeMouseAutoPlay({
       await new Promise(r => setTimeout(r, 1200));
       if (!isMounted) return;
 
-      const items = hrRef.current || [];
-      if (items.length === 0) {
+      // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha (y de arriba a abajo por filas)
+      const allCards = Array.from(document.querySelectorAll('.hr-stage-card'));
+      allCards.sort((a, b) => {
+        const rA = a.getBoundingClientRect();
+        const rB = b.getBoundingClientRect();
+        if (Math.abs(rA.top - rB.top) > 60) return rA.top - rB.top;
+        return rA.left - rB.left;
+      });
+
+      if (allCards.length === 0) {
         if (overrideStep !== 1) goToStepRef.current(2);
         return;
       }
 
-      for (let i = 0; i < items.length; i++) {
+      for (let i = 0; i < allCards.length; i++) {
         if (!isMounted) return;
-        const current = items[i];
-        const elId = `hr-card-${current.id || i}`;
-        let el = document.getElementById(elId);
-
-        // Si no lo encuentra por ID exacto, buscar por clase
-        if (!el) {
-          const allCards = document.querySelectorAll('.hr-stage-card');
-          if (allCards[i]) el = allCards[i];
-        }
+        const el = allCards[i];
 
         if (el) {
           const rect = el.getBoundingClientRect();
           const targetX = rect.left + rect.width / 2;
           const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-          // 1. Mover cursor hacia la tarjeta
+          // 1. Mover cursor hacia la tarjeta de izquierda a derecha
           setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
           await new Promise(r => setTimeout(r, 900));
           if (!isMounted) return;
@@ -86,8 +86,8 @@ export function useFakeMouseAutoPlay({
           if (!isMounted) return;
           setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-          // 3. Abrir Modal de detalle
-          if (setHrModalRef.current) setHrModalRef.current(current);
+          // 3. Abrir Modal de detalle interactuando con el elemento
+          el.click();
           await new Promise(r => setTimeout(r, 3800));
           if (!isMounted) return;
 
@@ -129,29 +129,30 @@ export function useFakeMouseAutoPlay({
       await new Promise(r => setTimeout(r, 1200));
       if (!isMounted) return;
 
-      const items = hseqRef.current || [];
-      if (items.length === 0) {
+      // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha
+      const allCards = Array.from(document.querySelectorAll('.kpi-stage-card'));
+      allCards.sort((a, b) => {
+        const rA = a.getBoundingClientRect();
+        const rB = b.getBoundingClientRect();
+        if (Math.abs(rA.top - rB.top) > 60) return rA.top - rB.top;
+        return rA.left - rB.left;
+      });
+
+      if (allCards.length === 0) {
         if (overrideStep !== 3) goToStepRef.current(4);
         return;
       }
 
-      for (let i = 0; i < items.length; i++) {
+      for (let i = 0; i < allCards.length; i++) {
         if (!isMounted) return;
-        const current = items[i];
-        const elId = `hseq-card-${current.id || i}`;
-        let el = document.getElementById(elId);
-
-        if (!el) {
-          const allCards = document.querySelectorAll('.kpi-stage-card');
-          if (allCards[i]) el = allCards[i];
-        }
+        const el = allCards[i];
 
         if (el) {
           const rect = el.getBoundingClientRect();
           const targetX = rect.left + rect.width / 2;
           const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-          // 1. Mover cursor hacia la tarjeta
+          // 1. Mover cursor hacia la tarjeta de izquierda a derecha
           setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
           await new Promise(r => setTimeout(r, 900));
           if (!isMounted) return;
@@ -162,8 +163,8 @@ export function useFakeMouseAutoPlay({
           if (!isMounted) return;
           setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-          // 3. Abrir Modal HSEQ
-          if (setHseqModalRef.current) setHseqModalRef.current(current);
+          // 3. Abrir Modal HSEQ interactuando con el elemento
+          el.click();
           await new Promise(r => setTimeout(r, 3800));
           if (!isMounted) return;
 

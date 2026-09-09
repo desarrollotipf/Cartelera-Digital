@@ -50,30 +50,9 @@ export function useCarteleraOrchestrator(
     // En modo editor o previsualización en vivo, la rotación está 100% bloqueada
     if (isEditorOpenRef.current || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
 
-    const curData = dataRef.current;
-    const curBirthdays = birthdaysRef.current;
-    const curWeekly = weeklyBirthdaysRef.current;
-    const validVideosCount = (curData?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools')).length;
-
     let targetStep = nextStep;
-    let attempts = 0;
-    while (attempts < 7) {
-      if (targetStep > 6) targetStep = 0;
-
-      let isValid = true;
-      if (targetStep === 0) isValid = (curData?.events?.length || 0) > 0;
-      else if (targetStep === 1) isValid = (curData?.hrModule?.length || 0) > 0;
-      else if (targetStep === 2) isValid = curBirthdays.length > 0 || curWeekly.length > 0;
-      else if (targetStep === 3) isValid = (curData?.hseq?.length || 0) > 0;
-      else if (targetStep === 4) isValid = true; // Clima / Noticias
-      else if (targetStep === 5) isValid = validVideosCount > 0;
-      else if (targetStep === 6) isValid = (curData?.convenios?.length || 0) > 0;
-
-      if (isValid) break;
-      targetStep++;
-      attempts++;
-    }
-    if (attempts >= 7) targetStep = 4; // Fallback seguro
+    if (targetStep > 6) targetStep = 0;
+    if (targetStep < 0) targetStep = 6;
 
     const fromStep = currentStepRef.current;
     if (targetStep === fromStep) return;
@@ -98,7 +77,7 @@ export function useCarteleraOrchestrator(
       }, 1950);
 
     }, 800);
-  }, []);
+  }, [isLivePreview, overrideStep]);
 
   useEffect(() => {
     if (isEditorOpen) {
@@ -149,22 +128,17 @@ export function useCarteleraOrchestrator(
     }
   }, [currentStep, videoIndex, transitioningToStep]);
 
-  // --- MÁQUINA DE ESTADOS ESCÉNICA (5 MÓDULOS PROTAGONISTAS CON FLOWING MENU) ---
+  // --- MÁQUINA DE ESTADOS ESCÉNICA: ROTACIÓN ESTRICTA EN ORDEN 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 0 ---
   useEffect(() => {
     if (isEditorOpen || transitioningToStep !== null || isLivePreview || !isTVMode || (overrideStep !== null && overrideStep !== undefined)) return;
 
     let timeoutId;
     let intervalId;
 
-    const rotationMs = (data?.topBar?.rotationSpeed || 15) * 1000;
+    const rotationMs = (data?.topBar?.rotationSpeed || 12) * 1000;
 
     if (currentStep === 0) { // PASO 0: EVENTOS CORPORATIVOS
       const eventsCount = data?.events?.length || 0;
-      if (eventsCount === 0 && overrideStep !== 0) {
-        goToStep(1);
-        return;
-      }
-
       if (eventsCount <= 1) {
         timeoutId = setTimeout(() => goToStep(1), rotationMs);
       } else {
@@ -182,42 +156,27 @@ export function useCarteleraOrchestrator(
         }, intervalTime);
       }
 
-    } else if (currentStep === 1) { // PASO 1: MÓDULO RRHH
+    } else if (currentStep === 1) { // PASO 1: AVISOS GESTIÓN HUMANA
       const hrCount = data?.hrModule?.length || 0;
-      if (hrCount === 0 && overrideStep !== 1) {
-        goToStep(2);
-        return;
-      }
-      // Temporizador maestro de seguridad para avanzar a Cumpleaños
-      const hrDuration = Math.max(14000, Math.min(28000, hrCount * 6000));
+      const hrDuration = hrCount === 0 ? rotationMs : Math.max(14000, Math.min(28000, hrCount * 6000));
       timeoutId = setTimeout(() => {
         goToStep(2);
       }, hrDuration);
 
     } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS
       const noBirthdays = birthdays.length === 0 && weeklyBirthdays.length === 0;
-      if (noBirthdays && overrideStep !== 2) {
-        goToStep(3);
-        return;
-      }
-
       timeoutId = setTimeout(() => {
         goToStep(3);
-      }, noBirthdays ? 4000 : rotationMs);
+      }, noBirthdays ? Math.min(8000, rotationMs) : rotationMs);
 
-    } else if (currentStep === 3) { // PASO 3: MÓDULO HSEQ
+    } else if (currentStep === 3) { // PASO 3: NORMAS HSEQ
       const hseqCount = data?.hseq?.length || 0;
-      if (hseqCount === 0 && overrideStep !== 3) {
-        goToStep(4);
-        return;
-      }
-      // Temporizador maestro de seguridad para avanzar a Clima y Noticias
-      const hseqDuration = Math.max(14000, Math.min(28000, hseqCount * 6000));
+      const hseqDuration = hseqCount === 0 ? rotationMs : Math.max(14000, Math.min(28000, hseqCount * 6000));
       timeoutId = setTimeout(() => {
         goToStep(4);
       }, hseqDuration);
 
-    } else if (currentStep === 4) { // PASO 4: CLIMA, NOTICIAS
+    } else if (currentStep === 4) { // PASO 4: CLIMA Y NOTICIAS
       const newsTimer = setTimeout(() => {
         setNewsIndex && setNewsIndex(prev => prev + 1);
       }, rotationMs / 2);
@@ -227,27 +186,18 @@ export function useCarteleraOrchestrator(
         goToStep(5);
       }, rotationMs);
 
-    } else if (currentStep === 5) { // PASO 5: VIDEOS CORPORATIVOS
+    } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
       const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
-      if (vids.length === 0 && overrideStep !== 5) {
-        goToStep(6);
-        return;
-      }
-
+      const videoDuration = vids.length === 0 ? rotationMs : rotationMs * 1.5;
       timeoutId = setTimeout(() => {
         goToStep(6);
-      }, rotationMs * 1.5);
+      }, videoDuration);
 
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
-      if (convenios.length === 0 && overrideStep !== 6) {
-        goToStep(0);
-        return;
-      }
-
-      const conveniosDuration = Math.max(15000, Math.min(25000, convenios.length * 3500));
+      const conveniosDuration = convenios.length === 0 ? rotationMs : Math.max(14000, Math.min(25000, convenios.length * 3500));
       timeoutId = setTimeout(() => {
-        goToStep(0); // Reiniciar ciclo completo de la cartelera
+        goToStep(0); // Reiniciar ciclo completo de la cartelera en Eventos (Paso 0)
       }, conveniosDuration);
     }
 

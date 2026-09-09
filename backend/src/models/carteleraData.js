@@ -5,8 +5,9 @@ const CarteleraConfig = require('./CarteleraConfig');
 // Almacén de datos iniciales para la Cartelera Digital de Pollo Fiesta S.A.
 let defaultData = {
   topBar: {
-    marquesina: "🐔 POLLO FIESTA S.A. | ¡Comprometidos con la Calidad, Bioseguridad y Bienestar de Nuestros Colaboradores! | Recordatorio: Jornada de Bioseguridad el 25 de Julio"
+    marquesina: "🐔 POLLO FIESTA S.A. | ¡Comprometidos con la Calidad, Bioseguridad y Bienestar de Nuestros Colaboradores!"
   },
+  events: [],
   workers: [],
   farms: [],
   hseq: [],

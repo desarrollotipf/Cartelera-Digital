@@ -71,7 +71,7 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
   const scrollRef = useRef(null);
   const [fakeMouse, setFakeMouse] = useState({ x: -100, y: -100, visible: false, clicking: false, ripple: false });
 
-  const convenios = data && data.length > 0 ? data : CONVENIOS_DATA;
+  const convenios = Array.isArray(data) ? data : [];
 
   // Obtener categorías únicas
   const categories = ['Todos', ...new Set(convenios.map(c => c.category))];
@@ -96,30 +96,32 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
     const playNext = async () => {
       if (!isActive) return;
 
-      if (currentIndex >= filteredConvenios.length) {
+      const allCards = Array.from(document.querySelectorAll('[id^="convenio-card-"]'));
+      allCards.sort((a, b) => {
+        const rA = a.getBoundingClientRect();
+        const rB = b.getBoundingClientRect();
+        if (Math.abs(rA.top - rB.top) > 60) return rA.top - rB.top;
+        return rA.left - rB.left;
+      });
+
+      if (allCards.length === 0 || currentIndex >= allCards.length) {
         if (onCompleteRef.current) onCompleteRef.current();
         return;
       }
-      const current = filteredConvenios[currentIndex];
 
-      // Scroll into view if needed (finding the DOM element)
-      const el = document.getElementById(`convenio-card-${current.id}`);
+      const el = allCards[currentIndex];
+      const cardId = el.id.replace('convenio-card-', '');
+      const current = filteredConvenios.find(c => String(c.id) === String(cardId)) || filteredConvenios[currentIndex];
+
       if (el && scrollRef.current) {
-        // Use scrollIntoView on the element itself, or adjust the parent container scroll
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // Wait a bit for scroll
         await new Promise(r => setTimeout(r, 600));
-
         if (!isActive) return;
 
         // Move mouse to card
         const rect = el.getBoundingClientRect();
         setFakeMouse({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, visible: true, clicking: false });
-
-        // Wait for mouse move
         await new Promise(r => setTimeout(r, 800));
-
         if (!isActive) return;
 
         // Click animation
@@ -129,7 +131,7 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
       }
 
       // Select it to open modal
-      setSelectedConvenio(current);
+      if (current) setSelectedConvenio(current);
 
       // Move mouse away slightly so it doesn't obstruct reading, but not too far
       await new Promise(r => setTimeout(r, 300));
@@ -376,6 +378,11 @@ const ConveniosCompensarPage = memo(({ data, autoPlay, onComplete, compact = fal
             </motion.div>
           )})}
         </AnimatePresence>
+        {filteredConvenios.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '30vh', color: 'var(--text-muted, #64748b)', fontSize: '1.25rem', fontWeight: 600 }}>
+            Sin convenios o beneficios registrados en el momento.
+          </div>
+        )}
       </motion.div>
 
       {/* MODAL DETALLES */}

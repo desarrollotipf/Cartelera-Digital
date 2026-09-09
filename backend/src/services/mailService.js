@@ -49,10 +49,11 @@ async function sendBirthdayEmail(colaborador) {
     return { success: true, simulated: true, message: 'Envío simulado (PAUSADO por configuración)' };
   }
 
-  // RESTRICCIÓN DE SEGURIDAD: Solo enviar a MIGUEL ESTEBAN TELLEZ MORENO
-  const targetName = "MIGUEL ESTEBAN TELLEZ MORENO";
-  if (nombreColaborador.trim().toUpperCase() !== targetName) {
-    console.log(` [MailService - RESTRINGIDO] Se omitió el envío a "${nombreColaborador}" porque el envío de correos está temporalmente restringido a ${targetName}.`);
+  // RESTRICCIÓN DE SEGURIDAD: Permitir destinatarios autorizados o envío explícito
+  const allowedNames = ["MIGUEL ESTEBAN TELLEZ MORENO", "SANCHEZ IBARRA MIGUEL EDUARDO", "MIGUEL EDUARDO SANCHEZ IBARRA"];
+  const isTargetAllowed = allowedNames.includes(nombreColaborador.trim().toUpperCase()) || colaborador.forceSend === true;
+  if (!isTargetAllowed) {
+    console.log(` [MailService - RESTRINGIDO] Se omitió el envío a "${nombreColaborador}" porque el envío de correos está temporalmente restringido.`);
     return { success: true, simulated: true, message: 'Envío simulado (Restringido a usuario específico)' };
   }
 

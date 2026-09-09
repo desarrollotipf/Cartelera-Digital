@@ -1,16 +1,25 @@
 export function useEditorForm(form, setForm, getDefaultForm, data, onReset) {
 
   const handleDiscardDraft = () => {
-    if (window.confirm("¿Seguro que deseas descartar este borrador?")) {
+    if (window.confirm("¿Seguro que deseas descartar los cambios y volver al último punto guardado?")) {
       localStorage.removeItem('pollo_fiesta_canva_editor_draft');
       setForm(getDefaultForm(data));
     }
   };
 
   const handleResetFactory = () => {
-    if (window.confirm("¿Seguro que deseas restaurar toda la cartelera a los valores de fábrica del sistema?")) {
+    if (window.confirm("¿Seguro que deseas restaurar toda la cartelera a los valores de fábrica limpios del sistema?")) {
       localStorage.removeItem('pollo_fiesta_canva_editor_draft');
-      onReset();
+      const cleanForm = getDefaultForm({});
+      cleanForm.events = [];
+      cleanForm.hrModule = [];
+      cleanForm.hseq = [];
+      cleanForm.videos = [];
+      cleanForm.convenios = [];
+      cleanForm.workers = [];
+      cleanForm.kpis = [];
+      setForm(cleanForm);
+      if (onReset) onReset();
     }
   };
 
