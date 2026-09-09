@@ -270,7 +270,9 @@ export function useCarteleraOrchestrator(
 
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
-      const conveniosDuration = Math.max(14000, Math.min(25000, convenios.length * 3500));
+      const conveniosDuration = convenios.length > 0 
+        ? Math.max(14000, (convenios.length * 6500) + 2000) 
+        : rotationMs;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(6));
       }, conveniosDuration);

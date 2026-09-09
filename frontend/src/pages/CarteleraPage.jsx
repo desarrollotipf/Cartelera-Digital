@@ -24,7 +24,7 @@ import CommandCenterModule from './Cartelera/modules/CommandCenterModule';
 import VideosModule from './Cartelera/modules/VideosModule';
 import ConveniosModule from './Cartelera/modules/ConveniosModule';
 
-import { Pin, Leaf, Award, Shield, X } from 'lucide-react';
+import { Pin, Leaf, Award, Shield, X, Gift } from 'lucide-react';
 
 function getMenuTabOrigin(idx, total = 5) {
   if (idx === null || idx === undefined) return '50% 50%';
@@ -46,6 +46,7 @@ export default function CarteleraPage({
   const [newsIndex, setNewsIndex] = useState(0);
   const [selectedHseq, setSelectedHseq] = useState(null);
   const [selectedHr, setSelectedHr] = useState(null);
+  const [selectedConvenio, setSelectedConvenio] = useState(null);
 
   const {
     data,
@@ -101,8 +102,10 @@ export default function CarteleraPage({
     goToStep,
     hseqItems: data?.hseq || [],
     hrItems: data?.hrModule || [],
+    convenioItems: data?.convenios || [],
     setSelectedHseq,
-    setSelectedHr
+    setSelectedHr,
+    setSelectedConvenio
   });
 
   const carteleraTabs = useMemo(() => [
@@ -314,6 +317,7 @@ export default function CarteleraPage({
           openEditor={openEditor}
           selectedElementId={selectedElementId}
           onElementClick={onElementClick}
+          onCardClick={setSelectedConvenio}
         />
       )}
     </>
@@ -585,6 +589,95 @@ export default function CarteleraPage({
               {selectedHseq.image && (
                 <div style={{ marginTop: '1.5rem', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
                   <img src={selectedHseq.image} style={{ width: '100%', height: 'auto', display: 'block' }} alt="HSEQ adjunto" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detalle Convenios Compensar */}
+      {selectedConvenio && (
+        <div 
+          onClick={() => setSelectedConvenio(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 99999
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: 'relative', width: '90%', maxWidth: '750px', maxHeight: '85vh' }}
+          >
+            <button
+              id="convenio-close-btn"
+              onClick={() => setSelectedConvenio(null)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                zIndex: 10
+              }}
+            >
+              <X size={20} />
+            </button>
+            <div
+              id="convenio-modal-content"
+              style={{
+                background: 'var(--bg-card)',
+                padding: '2.5rem',
+                borderRadius: '24px',
+                width: '100%',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}
+            >
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: (selectedConvenio.color || '#e11d48') + '25', margin: '0 auto 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Gift size={32} color={selectedConvenio.color || '#e11d48'} />
+                </div>
+                <h2 style={{ fontSize: '1.75rem', margin: 0, color: 'var(--text-primary)' }}>{selectedConvenio.title}</h2>
+                <div style={{ color: selectedConvenio.color || '#e11d48', fontWeight: 700, marginTop: '0.35rem', letterSpacing: '0.5px' }}>
+                  {selectedConvenio.category || 'Compensar'} • POLLO FIESTA S.A.
+                </div>
+                {selectedConvenio.discount && (
+                  <span style={{ display: 'inline-block', marginTop: '0.65rem', fontSize: '0.9rem', background: selectedConvenio.color || '#e11d48', color: '#fff', padding: '4px 14px', borderRadius: '14px', fontWeight: 800 }}>
+                    {selectedConvenio.discount}
+                  </span>
+                )}
+              </div>
+              {(selectedConvenio.description || selectedConvenio.desc) && (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6, textAlign: 'center' }}>
+                  {selectedConvenio.description || selectedConvenio.desc}
+                </p>
+              )}
+              {selectedConvenio.details && (
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '1rem 1.25rem', borderRadius: '14px', marginTop: '1rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem', fontSize: '0.95rem' }}>Condiciones y Detalles:</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5 }}>{selectedConvenio.details}</div>
+                </div>
+              )}
+              {selectedConvenio.image && (
+                <div style={{ marginTop: '1.5rem', width: '100%', borderRadius: '16px', overflow: 'hidden' }}>
+                  <img src={selectedConvenio.image} style={{ width: '100%', height: 'auto', display: 'block' }} alt="Convenio adjunto" />
                 </div>
               )}
             </div>

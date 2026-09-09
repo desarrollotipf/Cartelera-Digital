@@ -28,7 +28,8 @@ const ConveniosModule = ({
   isTVMode,
   openEditor,
   onElementClick,
-  selectedElementId
+  selectedElementId,
+  onCardClick
 }) => {
   const convenios = Array.isArray(data) ? data : (data?.convenios || []);
 
@@ -43,7 +44,14 @@ const ConveniosModule = ({
   const renderConvenioCard = (item, i) => {
     const colorCode = getItemColor(item);
     return (
-      <div key={item.id || i} id={`convenio-card-${item.id || i}`} style={{ width: '100%', flexShrink: 0 }}>
+      <div 
+        key={item.id || i} 
+        id={`convenio-card-${item.id || i}`} 
+        className="convenio-stage-card-wrapper"
+        data-convenio-id={item.id}
+        data-convenio-index={i}
+        style={{ width: '100%', flexShrink: 0 }}
+      >
         <motion.div
           layout
           className={`canva-interactive-element ${String(selectedElementId) === String(item.id || i) ? 'canva-interactive-selected' : ''}`}
@@ -57,10 +65,14 @@ const ConveniosModule = ({
               e.stopPropagation();
               onElementClick('convenios', item.id || i);
             }
+            if (onCardClick) {
+              e.stopPropagation();
+              onCardClick(item);
+            }
           }}
-          style={{ display: 'flex', flexDirection: 'column', cursor: onElementClick ? 'pointer' : 'default', height: 'fit-content', width: '100%' }}
+          style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', height: 'fit-content', width: '100%' }}
         >
-          <div className="hr-stage-card stagger-card-pop" style={{ '--idx': i, borderLeft: `4px solid ${colorCode}`, height: 'fit-content', width: '100%' }}>
+          <div className="hr-stage-card convenio-stage-card stagger-card-pop" style={{ '--idx': i, borderLeft: `4px solid ${colorCode}`, height: 'fit-content', width: '100%' }}>
             <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
                 <div className="hr-icon-circle bday-avatar-animated" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: colorCode + '25', flexShrink: 0 }}>

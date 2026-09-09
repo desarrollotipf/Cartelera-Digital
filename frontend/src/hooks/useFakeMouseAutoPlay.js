@@ -11,8 +11,10 @@ export function useFakeMouseAutoPlay({
   goToStep,
   hseqItems = [],
   hrItems = [],
+  convenioItems = [],
   setSelectedHseq,
-  setSelectedHr
+  setSelectedHr,
+  setSelectedConvenio
 }) {
   const [fakeMouse, setFakeMouse] = useState({
     x: -100,
@@ -32,11 +34,17 @@ export function useFakeMouseAutoPlay({
   const setHseqModalRef = useRef(setSelectedHseq);
   setHseqModalRef.current = setSelectedHseq;
 
+  const setConvenioModalRef = useRef(setSelectedConvenio);
+  setConvenioModalRef.current = setSelectedConvenio;
+
   const hseqRef = useRef(hseqItems);
   hseqRef.current = hseqItems;
 
   const hrRef = useRef(hrItems);
   hrRef.current = hrItems;
+
+  const conveniosRef = useRef(convenioItems);
+  conveniosRef.current = convenioItems;
 
   // 1. Autoplay para Avisos de Gestión Humana (Paso 1)
   useEffect(() => {
@@ -194,6 +202,85 @@ export function useFakeMouseAutoPlay({
     return () => {
       isMounted = false;
       if (setHseqModalRef.current) setHseqModalRef.current(null);
+    };
+  }, [currentStep, isTVMode, isLivePreview, overrideStep]);
+
+  // 3. Autoplay para Convenios Compensar (Paso 6)
+  useEffect(() => {
+    if (currentStep !== 6 || !isTVMode || isLivePreview) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const runConveniosSequence = async () => {
+      // Esperar que la animación de entrada se complete
+      await new Promise(r => setTimeout(r, 1200));
+      if (!isMounted) return;
+
+      // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha (y arriba hacia abajo)
+      const allCards = Array.from(document.querySelectorAll('.convenio-stage-card-wrapper, [id^="convenio-card-"]'));
+      allCards.sort((a, b) => {
+        const rA = a.getBoundingClientRect();
+        const rB = b.getBoundingClientRect();
+        if (Math.abs(rA.top - rB.top) > 60) return rA.top - rB.top;
+        return rA.left - rB.left;
+      });
+
+      if (allCards.length === 0) {
+        setFakeMouse(prev => ({ ...prev, visible: false }));
+        return;
+      }
+
+      for (let i = 0; i < allCards.length; i++) {
+        if (!isMounted) return;
+        const el = allCards[i];
+
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const targetX = rect.left + rect.width / 2;
+          const targetY = rect.top + Math.min(rect.height / 2, 220);
+
+          // 1. Mover cursor hacia la tarjeta de izquierda a derecha
+          setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
+          await new Promise(r => setTimeout(r, 900));
+          if (!isMounted) return;
+
+          // 2. Efecto de Clic
+          setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
+          await new Promise(r => setTimeout(r, 220));
+          if (!isMounted) return;
+          setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
+
+          // 3. Abrir Modal de Convenio garantizado
+          const convId = el.getAttribute('data-convenio-id');
+          const convIdx = el.getAttribute('data-convenio-index');
+          const convItem = (conveniosRef.current || []).find(it => String(it.id) === String(convId)) || (conveniosRef.current || [])[convIdx] || (conveniosRef.current || [])[i];
+          if (setConvenioModalRef.current && convItem) {
+            setConvenioModalRef.current(convItem);
+          }
+          try { el.click(); } catch (_) { }
+
+          // Esperar 4.2 segundos para lectura del convenio
+          await new Promise(r => setTimeout(r, 4200));
+          if (!isMounted) return;
+
+          // 4. Cerrar Modal
+          if (setConvenioModalRef.current) setConvenioModalRef.current(null);
+          await new Promise(r => setTimeout(r, 800));
+          if (!isMounted) return;
+        }
+      }
+
+      // Ocultar cursor al terminar la secuencia
+      setFakeMouse(prev => ({ ...prev, visible: false }));
+    };
+
+    runConveniosSequence();
+
+    return () => {
+      isMounted = false;
+      if (setConvenioModalRef.current) setConvenioModalRef.current(null);
     };
   }, [currentStep, isTVMode, isLivePreview, overrideStep]);
 
