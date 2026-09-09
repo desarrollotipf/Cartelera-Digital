@@ -12,10 +12,11 @@ const getCarteleraData = async (req, res) => {
 const updateCarteleraData = async (req, res) => {
   try {
     const newData = req.body;
+    const userScope = req.headers['x-user-scope'] || req.body?.userScope || null;
     if (!newData) {
       return res.status(400).json({ success: false, message: 'No se recibieron datos para actualizar.' });
     }
-    const updated = await carteleraModel.updateData(newData);
+    const updated = await carteleraModel.updateData(newData, userScope);
     res.json({ success: true, message: 'Cartelera actualizada correctamente', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error al actualizar datos de la cartelera', error: error.message });

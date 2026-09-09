@@ -41,10 +41,6 @@ export default function CanvaEditorStudio({
   const previousTabRef = useRef(null);
 
   const [form, setForm] = useState(() => {
-    const draft = localStorage.getItem('pollo_fiesta_canva_editor_draft');
-    if (draft) {
-      try { return JSON.parse(draft); } catch (e) {}
-    }
     return getDefaultForm(data);
   });
   const [isUploading, setIsUploading] = useState(false);

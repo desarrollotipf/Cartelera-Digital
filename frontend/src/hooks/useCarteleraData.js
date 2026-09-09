@@ -212,22 +212,27 @@ export function useCarteleraData(previewData, isEditorOpen) {
     return () => clearInterval(extId);
   }, []);
 
-  // Auto-sync every 30s when editor is closed
+  // Auto-sync cada 5s cuando el editor no está abierto, para sincronización instantánea entre todos los usuarios y pantallas
   useEffect(() => {
-    const id = setInterval(() => {
+    const syncData = () => {
       if (!isEditorOpen) {
         getCartelera()
           .then(res => {
-            // Note: In a real app we'd want to be careful with JSON.stringify for deep equality, but keeping original logic
-            if (res.success && res.data && JSON.stringify(res.data) !== JSON.stringify(dataState)) {
-              setData(res.data);
+            if (res.success && res.data) {
+              setData(prev => {
+                if (JSON.stringify(res.data) !== JSON.stringify(prev)) {
+                  localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(res.data));
+                  return res.data;
+                }
+                return prev;
+              });
             }
           })
           .catch(() => { });
+
         getCumpleanos()
           .then(res => {
             if (res.success && res.data) {
-              // Comparación liviana: longitud o algún id distinto — evita JSON.stringify costoso
               const changed =
                 res.data.length !== dbBirthdays.length ||
                 res.data.some((r, i) => r.personId !== dbBirthdays[i]?.personId);
@@ -236,14 +241,31 @@ export function useCarteleraData(previewData, isEditorOpen) {
           })
           .catch(() => { });
       }
-    }, 30000);
-    return () => clearInterval(id);
-  }, [isEditorOpen, dataState, dbBirthdays]);
+    };
 
-  const handleSaveData = async (newData) => {
+    const id = setInterval(syncData, 5000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') syncData();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [isEditorOpen, dbBirthdays]);
+
+  const handleSaveData = async (newData, scope = null) => {
     setData(newData);
     localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(newData));
-    try { await updateCartelera(newData); } catch (_) { }
+    try {
+      const res = await updateCartelera(newData, scope);
+      if (res?.success && res?.data) {
+        setData(res.data);
+        localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(res.data));
+      }
+    } catch (_) { }
   };
 
   const handleResetData = async () => {

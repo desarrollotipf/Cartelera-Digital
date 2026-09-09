@@ -66,7 +66,11 @@ export const deleteUser = (id) => request(`/users/${id}`, { method: 'DELETE' });
 
 // Cartelera
 export const getCartelera = () => request('/cartelera');
-export const updateCartelera = (data) => request('/cartelera', { method: 'POST', body: JSON.stringify(data) });
+export const updateCartelera = (data, userScope = null) => request('/cartelera', {
+  method: 'POST',
+  headers: userScope ? { 'x-user-scope': userScope } : {},
+  body: JSON.stringify(data)
+});
 
 export const getCumpleanos = () => request('/cumpleanos');
 

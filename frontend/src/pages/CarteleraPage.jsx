@@ -75,7 +75,9 @@ export default function CarteleraPage({
     setVideoOrientations,
     videosPlayedThisCycle,
     setCurrentStep,
-    setTransitioningToStep
+    setTransitioningToStep,
+    isStepAvailable,
+    getNextAvailableStep
   } = useCarteleraOrchestrator(
     data,
     isEditorOpen,
@@ -290,6 +292,7 @@ export default function CarteleraPage({
           setVideoOrientations={setVideoOrientations}
           videosPlayedThisCycle={videosPlayedThisCycle}
           goToStep={goToStep}
+          getNextAvailableStep={getNextAvailableStep}
           isEditorOpen={isEditorOpen}
           isLivePreview={isLivePreview}
           overrideStep={overrideStep}

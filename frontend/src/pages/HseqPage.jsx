@@ -1,48 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Tv, Palette, Zap, ExternalLink, Sparkles } from 'lucide-react';
-import { getCartelera, updateCartelera } from '../services/api';
+import { useCarteleraData } from '../hooks/useCarteleraData';
 import CanvaEditorStudio from '../components/CanvaEditorStudio';
 import CarteleraPage from './CarteleraPage';
 import LiveClock from '../components/LiveClock';
-import { getDefaultForm } from '../components/editor/editorConfig';
 
 export default function HseqPage() {
-  const [data, setData] = useState(() => {
-    const draft = localStorage.getItem('pollo_fiesta_canva_editor_draft');
-    if (draft) {
-      try { return JSON.parse(draft); } catch (e) {}
-    }
-    return getDefaultForm();
-  });
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-
-  useEffect(() => {
-    getCartelera()
-      .then(res => { 
-        const raw = res?.data || res;
-        if (raw && (raw.hseq || raw.topBar)) setData(raw);
-      })
-      .catch((err) => {
-        console.warn('Cargando HSEQ con datos locales:', err);
-      });
-  }, []);
+  const { data, handleSaveData, handleResetData } = useCarteleraData(null, isEditorOpen);
 
   const handleSave = async (draftData) => {
-    try {
-      const res = await updateCartelera(draftData);
-      if (res.success) {
-        setData(res.data);
-      }
-    } catch (error) {
-      console.error('Error guardando:', error);
-    }
+    await handleSaveData(draftData, 'HSEQ');
   };
 
   if (!data) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-muted)' }}>
-        <span>Cargando cartelera digital...</span>
+        <span>Cargando cartelera digital HSEQ...</span>
       </div>
     );
   }

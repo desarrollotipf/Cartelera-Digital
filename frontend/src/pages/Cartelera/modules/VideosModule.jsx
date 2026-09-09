@@ -12,6 +12,7 @@ const VideosModule = ({
   setVideoOrientations,
   videosPlayedThisCycle,
   goToStep,
+  getNextAvailableStep,
   isEditorOpen,
   isLivePreview,
   overrideStep,
@@ -37,7 +38,7 @@ const VideosModule = ({
     }
     
     if (validVideos.length === 0) {
-      goToStep(6);
+      goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
       return;
     }
     
@@ -50,12 +51,12 @@ const VideosModule = ({
       setIsDeckTransitioning(true);
       setVideoIndex(nextIndex);
     } else {
-      // Al terminar los videos del ciclo en TV, avanza inmediatamente a Convenios (Paso 6)
+      // Al terminar los videos del ciclo en TV, avanza al siguiente paso disponible
       videosPlayedThisCycle.current = 0; // Reiniciar contador para el próximo ciclo
       setVideoIndex(nextIndex);
-      goToStep(6);
+      goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }
-  }, [validVideos, isEditorOpen, isLivePreview, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep]);
+  }, [validVideos, isEditorOpen, isLivePreview, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
 
   // Función para descartar de inmediato videos caídos o bloqueados
   const markVideoAsFailed = React.useCallback((url) => {
@@ -134,7 +135,7 @@ const VideosModule = ({
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
     if (validVideos.length === 0) {
       if (isTVMode) {
-        goToStep(6);
+        goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
       }
       return;
     }

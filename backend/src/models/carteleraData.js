@@ -63,14 +63,14 @@ module.exports = {
     }
   },
 
-  updateData: async (newData) => {
+  updateData: async (newData, scope = null) => {
     try {
       let config = await CarteleraConfig.findByPk(1);
       if (!config) {
         config = await CarteleraConfig.create({ id: 1, data: defaultData });
       }
 
-      const currentData = config.data;
+      const currentData = config.data || defaultData;
 
       // Detect removed files to delete them from the uploads folder
       const oldDataStr = JSON.stringify(currentData);
@@ -100,8 +100,34 @@ module.exports = {
         }
       });
 
+      // Mezcla atómica y compartida según el ámbito del usuario:
+      // Gestión Humana y HSEQ comparten la misma cartelera y jamás deben pisarse los datos entre sí
+      let mergedData;
+      const normalizedScope = (scope || newData.userScope || '').toUpperCase();
+
+      if (normalizedScope === 'HSEQ') {
+        // HSEQ solo actualiza normativas HSEQ y sus títulos, preservando intactos los módulos de GH
+        mergedData = {
+          ...currentData,
+          hseq: Array.isArray(newData.hseq) ? newData.hseq : (currentData.hseq || []),
+          titles: {
+            ...(currentData.titles || {}),
+            ...(newData.titles || {})
+          }
+        };
+      } else if (normalizedScope === 'RRHH' || normalizedScope === 'GH') {
+        // Gestión Humana actualiza eventos, comunicados GH, videos y convenios, preservando intactas las normas HSEQ
+        mergedData = {
+          ...currentData,
+          ...newData,
+          hseq: currentData.hseq || []
+        };
+      } else {
+        // Admin o sincronización completa de fábrica
+        mergedData = { ...currentData, ...newData };
+      }
+
       // Guardar en Postgres
-      const mergedData = { ...currentData, ...newData };
       config.data = mergedData;
       await config.save();
 

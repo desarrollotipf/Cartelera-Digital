@@ -128,7 +128,58 @@ export function useCarteleraOrchestrator(
     }
   }, [currentStep, videoIndex, transitioningToStep]);
 
-  // --- MÁQUINA DE ESTADOS ESCÉNICA: ROTACIÓN ESTRICTA EN ORDEN 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 0 ---
+  // Determinar qué módulos tienen contenido activo para rotar ("si no hay nada, no debe mostrarse")
+  const isStepAvailable = useCallback((step) => {
+    if (step === 0) { // Eventos
+      return (data?.events?.length || 0) > 0;
+    }
+    if (step === 1) { // Avisos Gestión Humana
+      return (data?.hrModule?.length || 0) > 0;
+    }
+    if (step === 2) { // Cumpleaños
+      return (birthdays?.length || 0) > 0 || (weeklyBirthdays?.length || 0) > 0;
+    }
+    if (step === 3) { // Normas HSEQ
+      return (data?.hseq?.length || 0) > 0;
+    }
+    if (step === 4) { // Clima y Noticias (Siempre disponible con tiempo real y noticias)
+      return true;
+    }
+    if (step === 5) { // Sobre Nosotros / Videos
+      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
+      return vids.length > 0;
+    }
+    if (step === 6) { // Convenios Compensar
+      return (data?.convenios?.length || 0) > 0;
+    }
+    return false;
+  }, [data, birthdays, weeklyBirthdays]);
+
+  // Siguiente paso disponible en orden estricto 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 0
+  const getNextAvailableStep = useCallback((fromStep) => {
+    for (let offset = 1; offset <= 7; offset++) {
+      const candidate = (fromStep + offset) % 7;
+      if (isStepAvailable(candidate)) {
+        return candidate;
+      }
+    }
+    return 4; // Fallback garantizado a Clima y Noticias
+  }, [isStepAvailable]);
+
+  // Si el paso actual no tiene contenido (p.ej. valores limpios de fábrica), saltar al primer paso con contenido
+  useEffect(() => {
+    if (overrideStep !== null && overrideStep !== undefined) return;
+    if (isEditorOpen || isLivePreview) return;
+
+    if (!isStepAvailable(currentStep)) {
+      const firstAvailable = [0, 1, 2, 3, 4, 5, 6].find(s => isStepAvailable(s)) ?? 4;
+      if (firstAvailable !== currentStep) {
+        setCurrentStep(firstAvailable);
+      }
+    }
+  }, [currentStep, isStepAvailable, overrideStep, isEditorOpen, isLivePreview]);
+
+  // --- MÁQUINA DE ESTADOS ESCÉNICA: ROTACIÓN ESTRICTA EN ORDEN CON OMISIÓN DE MÓDULOS VACÍOS ---
   useEffect(() => {
     if (isEditorOpen || transitioningToStep !== null || isLivePreview || !isTVMode || (overrideStep !== null && overrideStep !== undefined)) return;
 
@@ -140,7 +191,7 @@ export function useCarteleraOrchestrator(
     if (currentStep === 0) { // PASO 0: EVENTOS CORPORATIVOS
       const eventsCount = data?.events?.length || 0;
       if (eventsCount <= 1) {
-        timeoutId = setTimeout(() => goToStep(1), rotationMs);
+        timeoutId = setTimeout(() => goToStep(getNextAvailableStep(0)), rotationMs);
       } else {
         let count = 0;
         const limit = Math.max(1, Math.min(eventsCount, 4));
@@ -151,29 +202,28 @@ export function useCarteleraOrchestrator(
           count++;
           if (count >= limit) {
             clearInterval(intervalId);
-            goToStep(1);
+            goToStep(getNextAvailableStep(0));
           }
         }, intervalTime);
       }
 
     } else if (currentStep === 1) { // PASO 1: AVISOS GESTIÓN HUMANA
       const hrCount = data?.hrModule?.length || 0;
-      const hrDuration = hrCount === 0 ? rotationMs : Math.max(14000, Math.min(28000, hrCount * 6000));
+      const hrDuration = Math.max(14000, Math.min(28000, hrCount * 6000));
       timeoutId = setTimeout(() => {
-        goToStep(2);
+        goToStep(getNextAvailableStep(1));
       }, hrDuration);
 
     } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS
-      const noBirthdays = birthdays.length === 0 && weeklyBirthdays.length === 0;
       timeoutId = setTimeout(() => {
-        goToStep(3);
-      }, noBirthdays ? Math.min(8000, rotationMs) : rotationMs);
+        goToStep(getNextAvailableStep(2));
+      }, rotationMs);
 
     } else if (currentStep === 3) { // PASO 3: NORMAS HSEQ
       const hseqCount = data?.hseq?.length || 0;
-      const hseqDuration = hseqCount === 0 ? rotationMs : Math.max(14000, Math.min(28000, hseqCount * 6000));
+      const hseqDuration = Math.max(14000, Math.min(28000, hseqCount * 6000));
       timeoutId = setTimeout(() => {
-        goToStep(4);
+        goToStep(getNextAvailableStep(3));
       }, hseqDuration);
 
     } else if (currentStep === 4) { // PASO 4: CLIMA Y NOTICIAS
@@ -183,21 +233,23 @@ export function useCarteleraOrchestrator(
 
       timeoutId = setTimeout(() => {
         clearTimeout(newsTimer);
-        goToStep(5);
+        const next = getNextAvailableStep(4);
+        if (next !== 4) {
+          goToStep(next);
+        }
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
-      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
-      const videoDuration = vids.length === 0 ? rotationMs : rotationMs * 1.5;
+      const videoDuration = rotationMs * 1.5;
       timeoutId = setTimeout(() => {
-        goToStep(6);
+        goToStep(getNextAvailableStep(5));
       }, videoDuration);
 
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
-      const conveniosDuration = convenios.length === 0 ? rotationMs : Math.max(14000, Math.min(25000, convenios.length * 3500));
+      const conveniosDuration = Math.max(14000, Math.min(25000, convenios.length * 3500));
       timeoutId = setTimeout(() => {
-        goToStep(0); // Reiniciar ciclo completo de la cartelera en Eventos (Paso 0)
+        goToStep(getNextAvailableStep(6));
       }, conveniosDuration);
     }
 
@@ -205,7 +257,7 @@ export function useCarteleraOrchestrator(
       if (timeoutId) clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [currentStep, data, isEditorOpen, birthdays, weeklyBirthdays, transitioningToStep, isLivePreview, isTVMode, overrideStep]);
+  }, [currentStep, data, isEditorOpen, birthdays, weeklyBirthdays, transitioningToStep, isLivePreview, isTVMode, overrideStep, getNextAvailableStep, goToStep]);
 
   return {
     currentStep,
@@ -222,6 +274,8 @@ export function useCarteleraOrchestrator(
     setIsDeckTransitioning,
     videoOrientations,
     setVideoOrientations,
-    videosPlayedThisCycle
+    videosPlayedThisCycle,
+    isStepAvailable,
+    getNextAvailableStep
   };
 }
