@@ -56,6 +56,7 @@ export default function CarteleraPage({
     weeklyBirthdays,
     spotlight,
     hrItems,
+    isLoading,
     handleSaveData,
     handleResetData
   } = useCarteleraData(previewData, isEditorOpen);
@@ -87,7 +88,9 @@ export default function CarteleraPage({
     selectedElementId,
     birthdays,
     weeklyBirthdays,
-    setNewsIndex
+    setNewsIndex,
+    todayBirthdays,
+    isLoading
   );
 
   const { fakeMouse } = useFakeMouseAutoPlay({

@@ -3197,9 +3197,9 @@ body {
   100% { transform: translateY(-50%); }
 }
 
-/* Animación de escalera para cumpleaños con pausa de lectura al inicio */
+/* Animación de escalera continua para cumpleaños */
 @keyframes bday-escalator-scroll {
-  0%, 8% { transform: translateY(0); }
+  0% { transform: translateY(0); }
   100% { transform: translateY(-50%); }
 }
 

@@ -43,10 +43,9 @@ const BirthdaysModule = ({
     displayItems = birthdays;
   }
 
-  // Velocidad de scroll ágil y fluida
-  const speed = isGrid3 
-    ? Math.max(18, Math.ceil(birthdays.length / 3) * 4)
-    : Math.max(18, birthdays.length * 3.5);
+  // Velocidad de scroll ágil y fluida para que todos los cumpleañeros alcancen a verse
+  const rowCount = isGrid3 ? Math.ceil(birthdays.length / 3) : birthdays.length;
+  const speed = Math.max(14, rowCount * 2.8);
 
   return (
     <motion.div
@@ -98,7 +97,7 @@ const BirthdaysModule = ({
                   gridTemplateColumns: isGrid3 ? 'repeat(3, 1fr)' : undefined,
                   gap: '1.25rem',
                   width: '100%',
-                  animation: shouldScroll ? `bday-escalator-scroll ${speed}s linear 2s infinite` : 'none'
+                  animation: shouldScroll ? `bday-escalator-scroll ${speed}s linear infinite` : 'none'
                 }}
               >
                 {displayItems.map((w, i) => {

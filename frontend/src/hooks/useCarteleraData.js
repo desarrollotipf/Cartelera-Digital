@@ -33,16 +33,16 @@ export function useCarteleraData(previewData, isEditorOpen) {
   const [weather, setWeather] = useState(null);
   const [news, setNews] = useState(null);
   const [dbBirthdays, setDbBirthdays] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initial fetch from API
   useEffect(() => {
-    getCartelera()
-      .then(res => { if (res.success && res.data) setData(res.data); })
-      .catch(() => { });
-
-    getCumpleanos()
-      .then(res => { if (res.success && res.data) setDbBirthdays(res.data); })
-      .catch(() => { });
+    Promise.allSettled([
+      getCartelera().then(res => { if (res.success && res.data) setData(res.data); }),
+      getCumpleanos().then(res => { if (res.success && res.data) setDbBirthdays(res.data); })
+    ]).finally(() => {
+      setIsLoading(false);
+    });
 
     /**
      * Modelo Estadístico y Meteorológico Calibrado para la Estimación de Precipitación (PoP)
@@ -328,6 +328,7 @@ export function useCarteleraData(previewData, isEditorOpen) {
     weeklyBirthdays,
     spotlight,
     hrItems,
+    isLoading,
     handleSaveData,
     handleResetData
   };

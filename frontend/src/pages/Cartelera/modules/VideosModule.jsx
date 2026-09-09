@@ -46,13 +46,22 @@ const VideosModule = ({
     const nextIndex = (videoIndex + 1) % validVideos.length;
 
     // En Modo TV / Cartelera normal:
-    // Si hay más videos, rota hasta completar el ciclo (máximo 3 videos por ciclo)
-    if (validVideos.length > 1 && videosPlayedThisCycle.current < Math.min(validVideos.length, 3)) {
-      setIsDeckTransitioning(true);
-      setVideoIndex(nextIndex);
+    // Al terminar tres videos (o 3 reproducciones), pasa con animación fluida a convenios
+    if (videosPlayedThisCycle.current < 3 && validVideos.length > 0) {
+      if (validVideos.length > 1) {
+        setIsDeckTransitioning(true);
+        setVideoIndex(nextIndex);
+      } else {
+        // Si hay solo 1 video, reiniciar su reproducción hasta completar los 3 pases
+        const videoEl = document.querySelector('video');
+        if (videoEl) {
+          videoEl.currentTime = 0;
+          videoEl.play().catch(() => {});
+        }
+      }
     } else {
-      // Al terminar los videos del ciclo en TV, avanza al siguiente paso disponible
-      videosPlayedThisCycle.current = 0; // Reiniciar contador para el próximo ciclo
+      // Al terminar 3 videos en el ciclo, avanza con la transición FlowingMenu a Convenios
+      videosPlayedThisCycle.current = 0;
       setVideoIndex(nextIndex);
       goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }

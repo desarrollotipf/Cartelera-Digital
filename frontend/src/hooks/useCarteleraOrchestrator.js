@@ -9,7 +9,9 @@ export function useCarteleraOrchestrator(
   selectedElementId, 
   birthdays = [], 
   weeklyBirthdays = [],
-  setNewsIndex
+  setNewsIndex,
+  todayBirthdays = [],
+  isLoading = false
 ) {
   const [currentStep, setCurrentStep] = useState(overrideStep !== null && overrideStep !== undefined ? overrideStep : 0);
   const [transitioningToStep, setTransitioningToStep] = useState(null);
@@ -21,6 +23,7 @@ export function useCarteleraOrchestrator(
   const [isDeckTransitioning, setIsDeckTransitioning] = useState(false);
   const [videoOrientations, setVideoOrientations] = useState({});
   const videosPlayedThisCycle = useRef(0);
+  const hasInitializedRef = useRef(false);
 
   const flowingTimeoutRef = useRef(null);
 
@@ -101,7 +104,7 @@ export function useCarteleraOrchestrator(
       const idx = data.videos.findIndex((v, i) => selectedElementId === (v.id || i));
       if (idx !== -1) {
         setVideoIndex(idx);
-        // Force reset the cycle count so it plays fully when previewed
+        // Reset cycle count so it plays fully when previewed
         videosPlayedThisCycle.current = 0;
         setIsDeckTransitioning(true);
       }
@@ -111,7 +114,7 @@ export function useCarteleraOrchestrator(
   useEffect(() => {
     if (currentStep === 5) {
       videosPlayedThisCycle.current = 0;
-      setVideoIndex(0); // Siempre arrancar desde el primer video al entrar a la sala de cine
+      setVideoIndex(0); // Arrancar desde el primer video al entrar
     }
   }, [currentStep]);
 
@@ -120,7 +123,7 @@ export function useCarteleraOrchestrator(
     if (currentStep === 5 || transitioningToStep === 5) {
       setIsDeckTransitioning(true);
       const timer = setTimeout(() => {
-        setIsDeckTransitioning(false); // Completa rotación y expande el video activo al frente en modo TikTok
+        setIsDeckTransitioning(false);
       }, 1300);
       return () => clearTimeout(timer);
     } else {
@@ -142,11 +145,11 @@ export function useCarteleraOrchestrator(
     if (step === 3) { // Normas HSEQ
       return (data?.hseq?.length || 0) > 0;
     }
-    if (step === 4) { // Clima y Noticias (Siempre disponible con tiempo real y noticias)
+    if (step === 4) { // Clima y Noticias (Siempre disponible)
       return true;
     }
     if (step === 5) { // Sobre Nosotros / Videos
-      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
+      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !v.url.includes('tiktok.com'));
       return vids.length > 0;
     }
     if (step === 6) { // Convenios Compensar
@@ -166,18 +169,27 @@ export function useCarteleraOrchestrator(
     return 4; // Fallback garantizado a Clima y Noticias
   }, [isStepAvailable]);
 
-  // Si el paso actual no tiene contenido (p.ej. valores limpios de fábrica), saltar al primer paso con contenido
+  // Inicialización y verificación de contenido empezando estrictamente por el paso 0:
+  // Si no hay eventos -> avisos (1), si no -> cumpleaños (2), etc.
   useEffect(() => {
+    if (isLoading) return; // Esperar a que la carga de datos de la base de datos termine
     if (overrideStep !== null && overrideStep !== undefined) return;
     if (isEditorOpen || isLivePreview) return;
 
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      const initialStep = [0, 1, 2, 3, 4, 5, 6].find(s => isStepAvailable(s)) ?? 4;
+      setCurrentStep(initialStep);
+      return;
+    }
+
     if (!isStepAvailable(currentStep)) {
-      const firstAvailable = [0, 1, 2, 3, 4, 5, 6].find(s => isStepAvailable(s)) ?? 4;
-      if (firstAvailable !== currentStep) {
-        setCurrentStep(firstAvailable);
+      const nextAvailable = getNextAvailableStep(currentStep);
+      if (nextAvailable !== currentStep) {
+        setCurrentStep(nextAvailable);
       }
     }
-  }, [currentStep, isStepAvailable, overrideStep, isEditorOpen, isLivePreview]);
+  }, [isLoading, currentStep, isStepAvailable, getNextAvailableStep, overrideStep, isEditorOpen, isLivePreview]);
 
   // --- MÁQUINA DE ESTADOS ESCÉNICA: ROTACIÓN ESTRICTA EN ORDEN CON OMISIÓN DE MÓDULOS VACÍOS ---
   useEffect(() => {
@@ -214,10 +226,19 @@ export function useCarteleraOrchestrator(
         goToStep(getNextAvailableStep(1));
       }, hrDuration);
 
-    } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS
+    } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS (ESCALERA DINÁMICA)
+      const bdayCount = birthdays?.length || 0;
+      const isGrid3 = (todayBirthdays?.length || 0) === 0;
+      const rowCount = isGrid3 ? Math.ceil(bdayCount / 3) : bdayCount;
+      const overflowLimit = isGrid3 ? 6 : 3;
+      // Duración calibrada para que la escalera eléctrica complete la exhibición de todos los cumpleañeros
+      const bdayDuration = bdayCount > overflowLimit
+        ? Math.max(16000, (rowCount * 2800) + 2000)
+        : rotationMs;
+
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(2));
-      }, rotationMs);
+      }, bdayDuration);
 
     } else if (currentStep === 3) { // PASO 3: NORMAS HSEQ
       const hseqCount = data?.hseq?.length || 0;
@@ -240,10 +261,12 @@ export function useCarteleraOrchestrator(
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
-      const videoDuration = rotationMs * 1.5;
+      // La rotación en videos se orquesta a través del evento de finalización al terminar 3 videos
+      // Safety watchdog de 180s por si un reproductor externo queda inactivo
+      const videoWatchdog = 180000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(5));
-      }, videoDuration);
+      }, videoWatchdog);
 
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
@@ -257,11 +280,13 @@ export function useCarteleraOrchestrator(
       if (timeoutId) clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [currentStep, data, isEditorOpen, birthdays, weeklyBirthdays, transitioningToStep, isLivePreview, isTVMode, overrideStep, getNextAvailableStep, goToStep]);
+  }, [currentStep, data, isEditorOpen, birthdays, weeklyBirthdays, todayBirthdays, transitioningToStep, isLivePreview, isTVMode, overrideStep, getNextAvailableStep, goToStep]);
 
   return {
     currentStep,
+    setCurrentStep,
     transitioningToStep,
+    setTransitioningToStep,
     flowingActiveIdx,
     menuHighlightIdx,
     goToStep,
