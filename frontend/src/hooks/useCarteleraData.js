@@ -264,8 +264,13 @@ export function useCarteleraData(previewData, isEditorOpen) {
       if (res?.success && res?.data) {
         setData(res.data);
         localStorage.setItem('pollo_fiesta_cartelera_data', JSON.stringify(res.data));
+        return res.data;
       }
-    } catch (_) { }
+      return res;
+    } catch (err) {
+      console.error('[CarteleraData] Error al persistir en base de datos:', err);
+      throw err;
+    }
   };
 
   const handleResetData = async () => {

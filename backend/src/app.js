@@ -123,7 +123,7 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar Servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`==================================================`);
   console.log(`API Pollo Fiesta S.A. en ejecución en puerto ${PORT}`);
 });

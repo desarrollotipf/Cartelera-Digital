@@ -425,6 +425,7 @@ export default function CarteleraPage({
           initialTab={editorTab}
           singleTabMode={editorTab === 'hseq'}
           initialStep={currentStep}
+          userScope={userScope}
           onSave={handleSaveData}
           onClose={() => setIsEditorOpen(false)}
           onReset={handleResetData}

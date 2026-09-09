@@ -164,9 +164,26 @@ export default function CanvaEditorStudio({
     setForm(prev => ({ ...prev, videos: [{ id: 'v_' + Date.now(), url: url.trim(), name }, ...(prev.videos || [])] }));
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const handleSaveAndPublish = async () => {
-    localStorage.removeItem('pollo_fiesta_canva_editor_draft');
-    onSave(form);
+    setIsSaving(true);
+    setSaveSuccess(false);
+    try {
+      localStorage.removeItem('pollo_fiesta_canva_editor_draft');
+      await onSave(form, userScope);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        if (onClose) onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Error guardando cartelera:', err);
+      alert('Error al guardar: ' + (err.message || 'Verifique la conexión con el servidor'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const {
@@ -287,8 +304,20 @@ export default function CanvaEditorStudio({
           <button className="canva-btn canva-btn-primary" onClick={handleResetFactory} title="Volver a configuración de fábrica" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Zap size={16} /> Valores Fábrica
           </button>
-          <button className="canva-btn canva-btn-primary" onClick={handleSaveAndPublish} disabled={Boolean(isUploading)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Save size={16} /> Guardar y Publicar
+          <button 
+            className="canva-btn canva-btn-primary" 
+            onClick={handleSaveAndPublish} 
+            disabled={Boolean(isUploading) || isSaving} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              backgroundColor: saveSuccess ? '#059669' : undefined,
+              borderColor: saveSuccess ? '#10b981' : undefined
+            }}
+          >
+            {isSaving ? <RefreshCw size={16} className="spin" /> : saveSuccess ? <Sparkles size={16} /> : <Save size={16} />}
+            {isSaving ? 'Guardando...' : saveSuccess ? '¡Guardado con Éxito!' : 'Guardar y Publicar'}
           </button>
           <button className="canva-btn canva-btn-close" onClick={onClose} title="Cerrar sin guardar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <X size={16} /> Salir
