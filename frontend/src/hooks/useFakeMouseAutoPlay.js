@@ -62,7 +62,7 @@ export function useFakeMouseAutoPlay({
       });
 
       if (allCards.length === 0) {
-        if (overrideStep !== 1) goToStepRef.current(2);
+        setFakeMouse(prev => ({ ...prev, visible: false }));
         return;
       }
 
@@ -98,14 +98,8 @@ export function useFakeMouseAutoPlay({
         }
       }
 
-      // Ocultar cursor y avanzar al Paso 2 (Cumpleaños)
+      // Ocultar cursor al terminar la secuencia de tarjetas
       setFakeMouse(prev => ({ ...prev, visible: false }));
-      await new Promise(r => setTimeout(r, 400));
-      if (!isMounted) return;
-
-      if (overrideStep !== 1) {
-        goToStepRef.current(2);
-      }
     };
 
     runHrSequence();
@@ -139,7 +133,7 @@ export function useFakeMouseAutoPlay({
       });
 
       if (allCards.length === 0) {
-        if (overrideStep !== 3) goToStepRef.current(4);
+        setFakeMouse(prev => ({ ...prev, visible: false }));
         return;
       }
 
@@ -175,14 +169,8 @@ export function useFakeMouseAutoPlay({
         }
       }
 
-      // Ocultar cursor y avanzar al Paso 4 (Clima y Noticias)
+      // Ocultar cursor al terminar la secuencia
       setFakeMouse(prev => ({ ...prev, visible: false }));
-      await new Promise(r => setTimeout(r, 400));
-      if (!isMounted) return;
-
-      if (overrideStep !== 3) {
-        goToStepRef.current(4);
-      }
     };
 
     runHseqSequence();
