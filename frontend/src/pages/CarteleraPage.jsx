@@ -247,6 +247,7 @@ export default function CarteleraPage({
           openEditor={openEditor}
           onElementClick={onElementClick}
           selectedElementId={selectedElementId}
+          onSelectHr={setSelectedHr}
         />
       )}
 
@@ -271,6 +272,7 @@ export default function CarteleraPage({
           openEditor={openEditor}
           onElementClick={onElementClick}
           selectedElementId={selectedElementId}
+          onSelectHseq={setSelectedHseq}
         />
       )}
 

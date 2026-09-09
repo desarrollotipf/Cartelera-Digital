@@ -8,7 +8,8 @@ const HseqModule = ({
   isTVMode, 
   openEditor, 
   onElementClick, 
-  selectedElementId 
+  selectedElementId,
+  onSelectHseq
 }) => {
   const hseqItems = data?.hseq || [];
   // Agrupar 'Seguridad', 'Salud' (versiones viejas) o 'SST' o sin categoría bajo SST
@@ -17,7 +18,7 @@ const HseqModule = ({
   const hseqAmbiental = hseqItems.filter(item => item.category === 'Ambiental');
 
   const renderHseqCard = (item, i, colorCode) => (
-    <div key={item.id || i} id={`hseq-card-${item.id || i}`} style={{ width: '100%', flexShrink: 0 }}>
+    <div key={item.id || i} id={`hseq-card-${item.id || i}`} data-hseq-id={item.id || i} data-hseq-index={i} style={{ width: '100%', flexShrink: 0 }}>
       
       <motion.div
         layout
@@ -31,11 +32,28 @@ const HseqModule = ({
           if (onElementClick) {
             e.stopPropagation();
             onElementClick('hseq', item.id || i);
+          } else if (onSelectHseq) {
+            e.stopPropagation();
+            onSelectHseq(item);
           }
         }}
-        style={{ display: 'flex', flexDirection: 'column', cursor: onElementClick ? 'pointer' : 'default', height: 'fit-content', width: '100%' }}
+        style={{ display: 'flex', flexDirection: 'column', cursor: (onElementClick || onSelectHseq) ? 'pointer' : 'default', height: 'fit-content', width: '100%' }}
       >
-        <div className="hr-stage-card stagger-card-pop" style={{ '--idx': i, borderLeft: `4px solid ${colorCode}`, height: 'fit-content', width: '100%' }}>
+        <div 
+          className="hr-stage-card kpi-stage-card stagger-card-pop" 
+          data-hseq-id={item.id || i} 
+          data-hseq-index={i}
+          onClick={(e) => {
+            if (onElementClick) {
+              e.stopPropagation();
+              onElementClick('hseq', item.id || i);
+            } else if (onSelectHseq) {
+              e.stopPropagation();
+              onSelectHseq(item);
+            }
+          }}
+          style={{ '--idx': i, borderLeft: `4px solid ${colorCode}`, height: 'fit-content', width: '100%', cursor: (onElementClick || onSelectHseq) ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
               <div className="hr-icon-circle bday-avatar-animated" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: colorCode + '33' }}>

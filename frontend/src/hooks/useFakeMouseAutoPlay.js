@@ -82,18 +82,26 @@ export function useFakeMouseAutoPlay({
 
           // 2. Efecto de Clic (Ripple)
           setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-          await new Promise(r => setTimeout(r, 180));
+          await new Promise(r => setTimeout(r, 220));
           if (!isMounted) return;
           setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-          // 3. Abrir Modal de detalle interactuando con el elemento
-          el.click();
-          await new Promise(r => setTimeout(r, 3800));
+          // 3. Abrir Modal de detalle garantizado (llamando el setter y el click del elemento)
+          const hrId = el.getAttribute('data-hr-id');
+          const hrIdx = el.getAttribute('data-hr-index');
+          const hrItem = (hrRef.current || []).find(it => String(it.id) === String(hrId)) || (hrRef.current || [])[hrIdx] || (hrRef.current || [])[i];
+          if (setHrModalRef.current && hrItem) {
+            setHrModalRef.current(hrItem);
+          }
+          try { el.click(); } catch (_) { }
+
+          // Esperar 4.2 segundos para lectura cómoda del aviso en el modal
+          await new Promise(r => setTimeout(r, 4200));
           if (!isMounted) return;
 
           // 4. Cerrar Modal
           if (setHrModalRef.current) setHrModalRef.current(null);
-          await new Promise(r => setTimeout(r, 700));
+          await new Promise(r => setTimeout(r, 800));
           if (!isMounted) return;
         }
       }
@@ -153,18 +161,26 @@ export function useFakeMouseAutoPlay({
 
           // 2. Efecto de Clic
           setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-          await new Promise(r => setTimeout(r, 180));
+          await new Promise(r => setTimeout(r, 220));
           if (!isMounted) return;
           setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
-          // 3. Abrir Modal HSEQ interactuando con el elemento
-          el.click();
-          await new Promise(r => setTimeout(r, 3800));
+          // 3. Abrir Modal HSEQ garantizado
+          const hseqId = el.getAttribute('data-hseq-id');
+          const hseqIdx = el.getAttribute('data-hseq-index');
+          const hseqItem = (hseqRef.current || []).find(it => String(it.id) === String(hseqId)) || (hseqRef.current || [])[hseqIdx] || (hseqRef.current || [])[i];
+          if (setHseqModalRef.current && hseqItem) {
+            setHseqModalRef.current(hseqItem);
+          }
+          try { el.click(); } catch (_) { }
+
+          // Esperar 4.2 segundos para lectura de la normativa
+          await new Promise(r => setTimeout(r, 4200));
           if (!isMounted) return;
 
           // 4. Cerrar Modal
           if (setHseqModalRef.current) setHseqModalRef.current(null);
-          await new Promise(r => setTimeout(r, 700));
+          await new Promise(r => setTimeout(r, 800));
           if (!isMounted) return;
         }
       }

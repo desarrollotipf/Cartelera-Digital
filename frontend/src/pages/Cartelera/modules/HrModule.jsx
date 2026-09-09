@@ -8,7 +8,8 @@ const HrModule = ({
   isTVMode,
   openEditor,
   onElementClick,
-  selectedElementId
+  selectedElementId,
+  onSelectHr
 }) => {
   const hrGridRef = useRef(null);
   
@@ -81,25 +82,40 @@ const HrModule = ({
                       if (onElementClick) {
                         e.stopPropagation();
                         onElementClick('hr', item.id || i);
+                      } else if (onSelectHr) {
+                        e.stopPropagation();
+                        onSelectHr(item);
                       }
                     }}
                     style={{ 
                       flex: hasImage ? 1 : 'initial', 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      cursor: onElementClick ? 'pointer' : 'default', 
+                      cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default', 
                       height: hasImage ? '100%' : 'fit-content' 
                     }}
                   >
                     <div 
                       id={`hr-card-${item.id || i}`} 
+                      data-hr-id={item.id || i}
+                      data-hr-index={i}
+                      onClick={(e) => {
+                        if (onElementClick) {
+                          e.stopPropagation();
+                          onElementClick('hr', item.id || i);
+                        } else if (onSelectHr) {
+                          e.stopPropagation();
+                          onSelectHr(item);
+                        }
+                      }}
                       className={`hr-stage-card stagger-card-pop ${hasImage ? 'hr-card-with-image' : 'hr-card-text-only'}`} 
                       style={{ 
                         '--idx': i, 
                         height: hasImage ? '100%' : 'fit-content', 
                         width: '100%', 
                         flex: hasImage ? 1 : 'initial',
-                        padding: hasImage ? '1.75rem' : '1.35rem 1.6rem'
+                        padding: hasImage ? '1.75rem' : '1.35rem 1.6rem',
+                        cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default'
                       }}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: hasImage ? '100%' : 'auto' }}>
