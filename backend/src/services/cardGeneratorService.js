@@ -24,120 +24,142 @@ function wrapText(ctx, text, maxWidth) {
 }
 
 /**
- * Genera la tarjeta de cumpleaños como una imagen estática única de alta definición.
+ * Genera la tarjeta de cumpleaños como una imagen estática única de alta definición
+ * utilizando la plantilla institucional oficial de Pollo Fiesta S.A.
+ * 
  * @param {string} nombre - Nombre del colaborador
- * @param {number} cardThemeIndex - Índice del diseño (1 a 4)
  * @returns {Promise<Buffer>} - Buffer de la imagen en formato JPEG
  */
-async function generateBirthdayCardImage(nombre, cardThemeIndex = 1) {
-  const cardFilename = `birthday_card_${cardThemeIndex}.jpg`;
-  const cardPath = path.join(__dirname, '../templates/assets', cardFilename);
+async function generateBirthdayCardImage(nombre) {
+  const cardPath = path.join(__dirname, '../templates/assets/birthday_card_template.jpg');
 
   const bgImage = await loadImage(cardPath);
-  const canvas = createCanvas(570, 1024);
+  const canvas = createCanvas(723, 1024);
   const ctx = canvas.getContext('2d');
 
-  // 1. Dibujar el fondo institucional base (todas las tarjetas ya tienen el arte limpio y nativo)
-  ctx.drawImage(bgImage, 0, 0, 570, 1024);
+  // 1. Dibujar el fondo institucional base oficial
+  ctx.drawImage(bgImage, 0, 0, 723, 1024);
 
-  // Paleta de colores para textos y firma según el diseño
-  const themeConfigs = {
-    1: { pillText: '#ffffff', highlight: '#92400e', signature: '#78350f' }, // Dorado
-    2: { pillText: '#ffffff', highlight: '#9a3412', signature: '#7c2d12' }, // Terracota
-    3: { pillText: '#ffffff', highlight: '#9d174d', signature: '#831843' }, // Magenta
-    4: { pillText: '#1e293b', highlight: '#1e40af', signature: '#1e3a8a' }, // Azul / Pastel
-  };
+  const centerX = 723 / 2; // 361.5
+  const maxWidth = 500;
 
-  const theme = themeConfigs[cardThemeIndex] || themeConfigs[1];
-
-  // 2. Dibujar el Nombre del cumpleañero directamente sobre la pastilla original (sin capas superpuestas)
+  // 2. Nombre del colaborador
   const cleanName = (nombre || 'COLABORADOR').trim().toUpperCase();
   
-  let nameFontSize = 20;
-  if (cleanName.length > 28) nameFontSize = 14.5;
-  else if (cleanName.length > 22) nameFontSize = 16.5;
-  else if (cleanName.length > 16) nameFontSize = 18.5;
+  let nameFontSize = 22;
+  if (cleanName.length > 32) nameFontSize = 15;
+  else if (cleanName.length > 25) nameFontSize = 17;
+  else if (cleanName.length > 18) nameFontSize = 19;
 
+  ctx.font = `bold ${nameFontSize}px Arial, Helvetica, sans-serif`;
+  const nameWidth = ctx.measureText(cleanName).width;
+  const pillWidth = Math.min(540, Math.max(340, nameWidth + 56));
+  const pillHeight = 44;
+  const pillY = 296;
+
+  // Sombra suave bajo la pastilla
+  ctx.save();
+  ctx.shadowColor = 'rgba(217, 119, 6, 0.28)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+
+  // Fondo de pastilla con degradado cálido
+  const grad = ctx.createLinearGradient(centerX - pillWidth / 2, pillY, centerX + pillWidth / 2, pillY + pillHeight);
+  grad.addColorStop(0, '#f59e0b');
+  grad.addColorStop(0.5, '#d97706');
+  grad.addColorStop(1, '#b45309');
+  
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(centerX - pillWidth / 2, pillY, pillWidth, pillHeight, 22);
+  ctx.fill();
+  ctx.restore();
+
+  // Borde dorado fino
+  ctx.strokeStyle = '#fef3c7';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.roundRect(centerX - pillWidth / 2, pillY, pillWidth, pillHeight, 22);
+  ctx.stroke();
+
+  // Texto del nombre
   ctx.save();
   ctx.font = `bold ${nameFontSize}px Arial, Helvetica, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = theme.pillText;
-  if (theme.pillText === '#ffffff') {
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetY = 1;
-  }
-  ctx.fillText(cleanName, 285, 423);
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
+  ctx.fillText(cleanName, centerX, pillY + pillHeight / 2 + 1);
   ctx.restore();
 
-  // 3. Dibujar el Mensaje de la Carta (Área beige central)
-  const maxWidth = 390;
-  let currentY = 495;
-
+  // 3. Mensaje institucional
+  let currentY = 368;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
 
   // Párrafo 1 (Destacado)
-  ctx.font = 'bold 15.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#2c1a0e';
+  ctx.font = 'bold 17.5px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#1e293b';
   const p1Lines = wrapText(ctx, '¡Hoy es un día muy especial para celebrar tu vida, tus logros y la gran alegría que aportas a nuestra compañía!', maxWidth);
   p1Lines.forEach(line => {
-    ctx.fillText(line, 285, currentY);
+    ctx.fillText(line, centerX, currentY);
+    currentY += 26;
+  });
+
+  currentY += 14;
+
+  // Párrafo 2 (Agradecimiento institucional)
+  ctx.font = '15.5px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#334155';
+  const p2Lines = wrapText(ctx, 'En nombre de toda la familia Pollo Fiesta S.A., queremos agradecerte de corazón por tu compromiso, dedicación y valioso esfuerzo diario.', maxWidth);
+  p2Lines.forEach(line => {
+    ctx.fillText(line, centerX, currentY);
     currentY += 24;
   });
 
-  currentY += 16;
-
-  // Párrafo 2 (Agradecimiento institucional)
-  ctx.font = '14.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#453225';
-  const p2Lines = wrapText(ctx, 'En nombre de toda la familia Pollo Fiesta S.A., queremos agradecerte de corazón por tu compromiso diario, dedicación y valioso esfuerzo.', maxWidth);
-  p2Lines.forEach(line => {
-    ctx.fillText(line, 285, currentY);
-    currentY += 23;
-  });
-
-  currentY += 16;
+  currentY += 14;
 
   // Párrafo 3 (Buenos deseos)
-  ctx.font = '14.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#453225';
-  const p3Lines = wrapText(ctx, 'Deseamos que este nuevo año de vida llegue cargado de salud, bendiciones, metas cumplidas y momentos memorables junto a tu familia.', maxWidth);
+  ctx.font = '15.5px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#334155';
+  const p3Lines = wrapText(ctx, 'Deseamos que este nuevo año de vida llegue lleno de salud, bendiciones, metas cumplidas y momentos memorables junto a tu familia.', maxWidth);
   p3Lines.forEach(line => {
-    ctx.fillText(line, 285, currentY);
-    currentY += 23;
+    ctx.fillText(line, centerX, currentY);
+    currentY += 24;
   });
-
-  currentY += 24;
-
-  // Línea divisoria punteada elegante
-  ctx.strokeStyle = 'rgba(180, 130, 70, 0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 4]);
-  ctx.beginPath();
-  ctx.moveTo(145, currentY);
-  ctx.lineTo(425, currentY);
-  ctx.stroke();
-  ctx.setLineDash([]);
 
   currentY += 18;
 
+  // Línea divisoria elegante
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.moveTo(centerX - 160, currentY);
+  ctx.lineTo(centerX + 160, currentY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  currentY += 14;
+
   // Cierre y Firma Institucional
-  ctx.font = 'bold 19px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = theme.highlight;
-  ctx.fillText('¡Feliz Cumpleaños!', 285, currentY);
+  ctx.font = 'bold 20px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#b45309';
+  ctx.fillText('¡Feliz Cumpleaños!', centerX, currentY);
 
   currentY += 26;
 
   ctx.font = 'bold 12.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = theme.signature;
-  ctx.fillText('GESTIÓN HUMANA & EQUIPO POLLO FIESTA S.A.', 285, currentY);
+  ctx.fillStyle = '#1e3a8a';
+  ctx.fillText('GESTIÓN HUMANA & EQUIPO POLLO FIESTA S.A.', centerX, currentY);
 
   // 4. Retornar Buffer JPEG de alta calidad
-  return canvas.toBuffer('image/jpeg', 94);
+  return canvas.toBuffer('image/jpeg', 95);
 }
 
 module.exports = {
   generateBirthdayCardImage
 };
+

@@ -64,11 +64,8 @@ async function sendBirthdayEmail(colaborador) {
   try {
     const { generateBirthdayCardImage } = require('./cardGeneratorService');
 
-    // Selección aleatoria entre los 4 diseños oficiales de tarjetas postales
-    const cardIndex = Math.floor(Math.random() * 4) + 1; // 1, 2, 3 o 4
-    
-    // Generar la tarjeta personalizada con el nombre y mensaje integrado
-    const cardBuffer = await generateBirthdayCardImage(nombreColaborador, cardIndex);
+    // Generar la tarjeta personalizada con el diseño oficial único
+    const cardBuffer = await generateBirthdayCardImage(nombreColaborador);
     
     const attachments = [{
       filename: `tarjeta_cumpleanos_${nombreColaborador.replace(/\s+/g, '_')}.jpg`,

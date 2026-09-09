@@ -37,7 +37,7 @@ function generateBirthdayEmailHtml(nombre) {
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; width: 100%;">
           <tr>
             <td align="center">
-              <div class="card-container" style="width: 100%; max-width: 560px; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16); background-color: #fef3c7;">
+              <div class="card-container" style="width: 100%; max-width: 560px; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16); background-color: #ffffff;">
                 <img 
                   src="cid:birthday_card_final" 
                   alt="¡Feliz Cumpleaños ${nombre}!" 
