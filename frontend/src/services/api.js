@@ -1,4 +1,5 @@
-// API client - Resuelve automáticamente al backend en producción o usa Vite proxy en desarrollo
+export const CLOUD_API_BASE = 'https://carteleragh-back-d3c9gcd6cpf3fggv.brazilsouth-01.azurewebsites.net/api';
+
 export const getApiBase = () => {
   if (import.meta.env.VITE_API_URL) {
     return `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api`;
@@ -6,7 +7,7 @@ export const getApiBase = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     if (hostname.includes('pollo-fiesta.com') || hostname.includes('azurewebsites.net')) {
-      return 'https://carteleragh-back-d3c9gcd6cpf3fggv.brazilsouth-01.azurewebsites.net/api';
+      return CLOUD_API_BASE;
     }
   }
   return '/api';
@@ -21,14 +22,18 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = (error) => reject(error);
 });
 
-async function request(path, options = {}, retries = 1) {
-  const base = getApiBase();
+async function request(path, options = {}, retries = 1, forceCloudFallback = false) {
+  const base = forceCloudFallback ? CLOUD_API_BASE : getApiBase();
   const { headers, ...restOptions } = options;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   try {
     const res = await fetch(`${base}${path}`, {
       ...restOptions,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeader,
         ...(headers || {})
       }
     });
@@ -38,9 +43,9 @@ async function request(path, options = {}, retries = 1) {
     try {
       data = JSON.parse(text);
     } catch (_) {
-      if ((text.includes('<!doctype') || text.includes('<html')) && retries > 0) {
-        await new Promise(r => setTimeout(r, 2000));
-        return request(path, options, retries - 1);
+      // Si recibimos HTML de error (como 502/504 de proxy Vite), reintentar contra la API en la nube
+      if (!forceCloudFallback && (text.includes('<!doctype') || text.includes('<html') || res.status >= 500)) {
+        return request(path, options, 0, true);
       }
       throw new Error(`Error en respuesta del servidor (${res.status})`);
     }
@@ -50,9 +55,12 @@ async function request(path, options = {}, retries = 1) {
     }
     return data;
   } catch (error) {
+    if (!forceCloudFallback && !error.message.includes('HTTP 4')) {
+      return request(path, options, 0, true);
+    }
     if (retries > 0 && !error.message.includes('HTTP 4')) {
-      await new Promise(r => setTimeout(r, 2000));
-      return request(path, options, retries - 1);
+      await new Promise(r => setTimeout(r, 1500));
+      return request(path, options, retries - 1, forceCloudFallback);
     }
     throw error;
   }

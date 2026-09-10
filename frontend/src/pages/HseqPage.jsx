@@ -10,8 +10,8 @@ export default function HseqPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const { data, handleSaveData, handleResetData } = useCarteleraData(null, isEditorOpen);
 
-  const handleSave = async (draftData) => {
-    await handleSaveData(draftData, 'HSEQ');
+  const handleSave = async (draftData, scope = 'HSEQ') => {
+    await handleSaveData(draftData, scope || 'HSEQ');
   };
 
   if (!data) {
@@ -29,7 +29,9 @@ export default function HseqPage() {
         initialTab={'hseq'}
         singleTabMode={true}
         initialStep={3}
+        userScope="HSEQ"
         onSave={handleSave}
+        onReset={handleResetData}
         onClose={() => setIsEditorOpen(false)}
         renderCanvas={(draftData, step, selectedId, handleSelect) => (
           <CarteleraPage

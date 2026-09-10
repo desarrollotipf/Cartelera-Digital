@@ -45,8 +45,8 @@ module.exports = {
       // Patch old database structures to ensure all default modules exist
       const keysToPatch = ['hseq', 'hrModule', 'convenios', 'events'];
       for (const key of keysToPatch) {
-        if (!store[key] || (Array.isArray(store[key]) && store[key].length === 0)) {
-          store[key] = defaultData[key];
+        if (!store[key]) {
+          store[key] = defaultData[key] || [];
           updated = true;
         }
       }
@@ -127,8 +127,10 @@ module.exports = {
         mergedData = { ...currentData, ...newData };
       }
 
-      // Guardar en Postgres
+      // Guardar en Postgres de forma garantizada
+      await CarteleraConfig.update({ data: mergedData }, { where: { id: 1 } });
       config.data = mergedData;
+      config.changed('data', true);
       await config.save();
 
       return mergedData;
