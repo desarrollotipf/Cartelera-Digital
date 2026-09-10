@@ -96,6 +96,7 @@ export default function CarteleraPage({
 
   const { fakeMouse } = useFakeMouseAutoPlay({
     currentStep,
+    transitioningToStep,
     isTVMode,
     isLivePreview,
     overrideStep,
@@ -142,6 +143,38 @@ export default function CarteleraPage({
   useEffect(() => {
     document.documentElement.style.setProperty('--mod-opacity', targetOpacity);
   }, [targetOpacity]);
+
+  // 1. Cerrar cualquier modal abierto al cambiar de paso o al iniciar una transición entre pasos
+  useEffect(() => {
+    setSelectedHr(null);
+    setSelectedHseq(null);
+    setSelectedConvenio(null);
+  }, [currentStep, transitioningToStep]);
+
+  // 2. Watchdog de seguridad: ningún modal debe quedar abierto permanentemente en modo rotativo o TV
+  useEffect(() => {
+    if (!selectedConvenio || isEditorOpen) return;
+    const timer = setTimeout(() => {
+      setSelectedConvenio(null);
+    }, 5500);
+    return () => clearTimeout(timer);
+  }, [selectedConvenio, isEditorOpen]);
+
+  useEffect(() => {
+    if (!selectedHr || isEditorOpen) return;
+    const timer = setTimeout(() => {
+      setSelectedHr(null);
+    }, 5500);
+    return () => clearTimeout(timer);
+  }, [selectedHr, isEditorOpen]);
+
+  useEffect(() => {
+    if (!selectedHseq || isEditorOpen) return;
+    const timer = setTimeout(() => {
+      setSelectedHseq(null);
+    }, 5500);
+    return () => clearTimeout(timer);
+  }, [selectedHseq, isEditorOpen]);
 
   useGSAP(() => {
     if (currentStep === 1 && hrGridRef.current) {

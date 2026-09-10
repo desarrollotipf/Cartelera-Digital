@@ -221,7 +221,7 @@ export function useCarteleraOrchestrator(
 
     } else if (currentStep === 1) { // PASO 1: AVISOS GESTIÓN HUMANA
       const hrCount = data?.hrModule?.length || 0;
-      const hrDuration = Math.max(14000, (hrCount * 6500) + 1500);
+      const hrDuration = Math.max(16000, (hrCount * 6800) + 3000);
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(1));
       }, hrDuration);
@@ -242,7 +242,7 @@ export function useCarteleraOrchestrator(
 
     } else if (currentStep === 3) { // PASO 3: NORMAS HSEQ
       const hseqCount = data?.hseq?.length || 0;
-      const hseqDuration = Math.max(14000, (hseqCount * 6500) + 1500);
+      const hseqDuration = Math.max(16000, (hseqCount * 6800) + 3000);
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(3));
       }, hseqDuration);
@@ -271,7 +271,7 @@ export function useCarteleraOrchestrator(
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
       const convenios = data?.convenios || [];
       const conveniosDuration = convenios.length > 0 
-        ? Math.max(14000, (convenios.length * 6500) + 2000) 
+        ? Math.max(16000, (convenios.length * 6800) + 3000) 
         : rotationMs;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(6));
