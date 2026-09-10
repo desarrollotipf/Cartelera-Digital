@@ -53,12 +53,20 @@ const getCarteleraData = async (req, res) => {
 const updateCarteleraData = async (req, res) => {
   console.log('[carteleraController] Recibida solicitud POST /api/cartelera');
   try {
-    const newData = req.body;
-    const userScope = req.headers['x-user-scope'] || req.body?.userScope || null;
+    let newData = req.body;
+    if (typeof newData === 'string') {
+      try {
+        newData = JSON.parse(newData);
+      } catch (_) {}
+    }
+
+    const userScope = req.headers['x-user-scope'] || req.body?.userScope || newData?.userScope || null;
     console.log('[carteleraController] userScope:', userScope, 'newData keys:', Object.keys(newData || {}));
-    if (!newData) {
+
+    if (!newData || (typeof newData === 'object' && Object.keys(newData).length === 0)) {
       return res.status(400).json({ success: false, message: 'No se recibieron datos para actualizar.' });
     }
+
     console.log('[carteleraController] Llamando a carteleraModel.updateData...');
     const updated = await carteleraModel.updateData(newData, userScope);
     console.log('[carteleraController] Actualización exitosa en base de datos');

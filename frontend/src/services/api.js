@@ -23,10 +23,14 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 
 async function request(path, options = {}, retries = 1) {
   const base = getApiBase();
+  const { headers, ...restOptions } = options;
   try {
     const res = await fetch(`${base}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-      ...options
+      ...restOptions,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(headers || {})
+      }
     });
     
     const text = await res.text();
@@ -69,7 +73,7 @@ export const getCartelera = () => request('/cartelera');
 export const updateCartelera = (data, userScope = null) => request('/cartelera', {
   method: 'POST',
   headers: userScope ? { 'x-user-scope': userScope } : {},
-  body: JSON.stringify(data)
+  body: JSON.stringify({ ...(data || {}), userScope: userScope || data?.userScope })
 });
 
 export const getCumpleanos = () => request('/cumpleanos');
