@@ -32,17 +32,74 @@ const ConveniosModule = ({
   onCardClick
 }) => {
   const convenios = Array.isArray(data) ? data : (data?.convenios || []);
+  const totalCount = convenios.length;
 
-  // Distribuir todos los convenios secuencialmente en 3 columnas balanceadas
-  const col1 = convenios.filter((_, i) => i % 3 === 0);
-  const col2 = convenios.filter((_, i) => i % 3 === 1);
-  const col3 = convenios.filter((_, i) => i % 3 === 2);
+  // Distribuir todos los convenios secuencialmente en columnas según cantidad
+  let columnCount = 3;
+  if (totalCount === 1) columnCount = 1;
+  else if (totalCount === 2 || totalCount === 4) columnCount = 2;
 
-  const columns = [col1, col2, col3].filter(col => col.length > 0);
-  const columnCount = columns.length;
+  const cols = Array.from({ length: columnCount }, () => []);
+  convenios.forEach((item, i) => {
+    cols[i % columnCount].push(item);
+  });
 
-  const renderConvenioCard = (item, i) => {
+  const columns = cols.filter(col => col.length > 0);
+
+  const getConvenioMetrics = (colItemCount) => {
+    const effectiveCount = totalCount === 1 ? 1 : colItemCount;
+
+    if (effectiveCount === 1) {
+      return {
+        padding: totalCount === 1 ? '2.5rem 3rem' : '2rem 2.25rem',
+        iconBoxSize: totalCount === 1 ? '68px' : '56px',
+        iconSize: totalCount === 1 ? 36 : 30,
+        titleSize: totalCount === 1 ? 'clamp(1.75rem, 2.3vw, 2.4rem)' : 'clamp(1.45rem, 1.8vw, 1.8rem)',
+        badgeSize: totalCount === 1 ? '0.95rem' : '0.85rem',
+        descSize: totalCount === 1 ? 'clamp(1.2rem, 1.6vw, 1.55rem)' : 'clamp(1.1rem, 1.3vw, 1.25rem)',
+        descLineHeight: 1.65,
+        gap: '1.25rem',
+        flex: 1,
+        justify: totalCount === 1 ? 'center' : 'flex-start',
+        imageMaxHeight: totalCount === 1 ? '44vh' : '28vh'
+      };
+    }
+
+    if (effectiveCount === 2) {
+      return {
+        padding: '1.6rem 1.85rem',
+        iconBoxSize: '48px',
+        iconSize: 26,
+        titleSize: 'clamp(1.35rem, 1.6vw, 1.65rem)',
+        badgeSize: '0.8rem',
+        descSize: 'clamp(1.05rem, 1.2vw, 1.18rem)',
+        descLineHeight: 1.55,
+        gap: '0.9rem',
+        flex: 1,
+        justify: 'flex-start',
+        imageMaxHeight: '22vh'
+      };
+    }
+
+    return {
+      padding: '1.2rem 1.4rem',
+      iconBoxSize: '40px',
+      iconSize: 22,
+      titleSize: '1.25rem',
+      badgeSize: '0.75rem',
+      descSize: '1rem',
+      descLineHeight: 1.45,
+      gap: '0.75rem',
+      flex: 1,
+      justify: 'flex-start',
+      imageMaxHeight: '16vh'
+    };
+  };
+
+  const renderConvenioCard = (item, i, colItemCount) => {
     const colorCode = getItemColor(item);
+    const metrics = getConvenioMetrics(colItemCount);
+
     return (
       <div 
         key={item.id || i} 
@@ -50,13 +107,19 @@ const ConveniosModule = ({
         className="convenio-stage-card-wrapper"
         data-convenio-id={item.id}
         data-convenio-index={i}
-        style={{ width: '100%', flexShrink: 0 }}
+        style={{ 
+          width: '100%', 
+          flex: metrics.flex, 
+          display: 'flex', 
+          flexDirection: 'column',
+          minHeight: colItemCount <= 3 ? 0 : '160px'
+        }}
       >
         <motion.div
           layout
           className={`canva-interactive-element ${String(selectedElementId) === String(item.id || i) ? 'canva-interactive-selected' : ''}`}
           animate={{ 
-            scale: String(selectedElementId) === String(item.id || i) ? 1.08 : 1, 
+            scale: String(selectedElementId) === String(item.id || i) ? 1.05 : 1, 
             zIndex: String(selectedElementId) === String(item.id || i) ? 9999 : 1 
           }}
           transition={{ type: "spring", stiffness: 300, damping: 24 }}
@@ -70,12 +133,47 @@ const ConveniosModule = ({
               onCardClick(item);
             }
           }}
-          style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', height: 'fit-content', width: '100%' }}
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            cursor: 'pointer', 
+            height: '100%', 
+            width: '100%',
+            flex: 1
+          }}
         >
-          <div className="hr-stage-card convenio-stage-card stagger-card-pop" style={{ '--idx': i, borderLeft: `4px solid ${colorCode}`, height: 'fit-content', width: '100%' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
-                <div className="hr-icon-circle bday-avatar-animated" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: colorCode + '25', flexShrink: 0 }}>
+          <div 
+            className="hr-stage-card convenio-stage-card stagger-card-pop" 
+            style={{ 
+              '--idx': i, 
+              borderLeft: `5px solid ${colorCode}`, 
+              height: '100%', 
+              width: '100%',
+              flex: 1,
+              padding: metrics.padding,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: metrics.justify,
+              boxSizing: 'border-box'
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, justifyContent: metrics.justify }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: metrics.gap, marginBottom: item.image ? '0.75rem' : '0' }}>
+                <div 
+                  className="hr-icon-circle bday-avatar-animated" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: colorCode + '25', 
+                    width: metrics.iconBoxSize,
+                    height: metrics.iconBoxSize,
+                    minWidth: metrics.iconBoxSize,
+                    minHeight: metrics.iconBoxSize,
+                    borderRadius: '16px',
+                    flexShrink: 0 
+                  }}
+                >
                   {item.icon && (item.icon.startsWith('http') || item.icon.startsWith('/') || item.icon.startsWith('data:')) ? (
                     <img src={item.icon} alt="Icono" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px' }} loading="lazy" />
                   ) : (
@@ -84,28 +182,36 @@ const ConveniosModule = ({
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+                    <div style={{ fontSize: metrics.titleSize, fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word', lineHeight: 1.25 }}>
                       {item.title}
                     </div>
                     {item.discount && (
-                      <span style={{ fontSize: '0.8rem', background: colorCode, color: '#fff', padding: '2px 10px', borderRadius: '12px', fontWeight: 900, boxShadow: `0 2px 8px ${colorCode}66` }}>
+                      <span style={{ fontSize: metrics.badgeSize, background: colorCode, color: '#fff', padding: '3px 12px', borderRadius: '14px', fontWeight: 900, boxShadow: `0 2px 8px ${colorCode}66` }}>
                         {item.discount}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: colorCode, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '4px 0 8px 0' }}>
-                    {item.category || 'Compensar'} • POLLO FIESTA S.A.
+                  <div style={{ fontSize: metrics.badgeSize, color: colorCode, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '6px 0 8px 0' }}>
+                    <span style={{ background: colorCode + '20', padding: '0.2rem 0.65rem', borderRadius: '20px', border: `1px solid ${colorCode}40` }}>
+                      {item.category || 'Compensar'} • POLLO FIESTA S.A.
+                    </span>
                   </div>
                   {(item.description || item.desc || item.details) && (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.5, margin: '0', whiteSpace: 'pre-wrap' }}>
+                    <p style={{ 
+                      color: 'var(--text-secondary)', 
+                      fontSize: metrics.descSize, 
+                      lineHeight: metrics.descLineHeight, 
+                      margin: '0', 
+                      whiteSpace: 'pre-wrap' 
+                    }}>
                       {item.description || item.desc || item.details}
                     </p>
                   )}
                 </div>
               </div>
               {item.image && (
-                <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', backgroundColor: 'var(--bg-secondary)' }}>
-                  <img src={item.image} alt="Convenio Adjunto" style={{ maxWidth: '100%', height: 'auto', maxHeight: '42vh', display: 'block', objectFit: 'contain' }} loading="lazy" />
+                <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', flex: 1, maxHeight: metrics.imageMaxHeight }}>
+                  <img src={item.image} alt="Convenio Adjunto" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', objectFit: 'contain' }} loading="lazy" />
                 </div>
               )}
             </div>
@@ -124,9 +230,20 @@ const ConveniosModule = ({
       transition={{ duration: 0.35 }}
       className="block-section"
       onClick={() => openEditor && openEditor('convenios')}
-      style={{ cursor: isTVMode ? 'default' : 'pointer', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '1rem', width: '100%', willChange: 'transform' }}
+      style={{ 
+        cursor: isTVMode ? 'default' : 'pointer', 
+        flex: 1, 
+        height: '100%',
+        minHeight: 0, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        overflow: 'hidden', 
+        padding: '1.25rem 1.5rem', 
+        width: '100%', 
+        willChange: 'transform' 
+      }}
     >
-      <div className="block-header" style={{ zIndex: 20 }}>
+      <div className="block-header" style={{ zIndex: 20, flexShrink: 0, marginBottom: '1rem' }}>
         <div className="block-title-group">
           <span className="block-icon" style={{ display: 'flex', alignItems: 'center' }}><Gift size={38} color="#E11D48" strokeWidth={2.5} /></span>
           <div>
@@ -136,14 +253,36 @@ const ConveniosModule = ({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: columnCount > 0 ? `repeat(${Math.min(columnCount, 3)}, 1fr)` : '1fr', gap: '1.5rem', width: '100%', flex: 1, minHeight: 0 }}>
+      <div 
+        style={{ 
+          display: 'grid', 
+          gridTemplateColumns: columns.length > 0 ? `repeat(${columns.length}, 1fr)` : '1fr', 
+          gap: '1.75rem', 
+          width: '100%', 
+          flex: 1, 
+          height: '100%',
+          minHeight: 0 
+        }}
+      >
         {columns.map((colItems, colIdx) => (
-          <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0, overflowY: 'auto', paddingRight: '0.5rem', flexShrink: 0 }}>
-            {colItems.map((item) => renderConvenioCard(item, convenios.indexOf(item)))}
+          <div 
+            key={colIdx} 
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: colItems.length <= 2 ? '1.5rem' : '1rem', 
+              minHeight: 0, 
+              height: '100%',
+              flex: 1,
+              overflowY: colItems.length > 3 ? 'auto' : 'hidden', 
+              paddingRight: '0.5rem' 
+            }}
+          >
+            {colItems.map((item) => renderConvenioCard(item, convenios.indexOf(item), colItems.length))}
           </div>
         ))}
 
-        {columnCount === 0 && (
+        {columns.length === 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '1.3rem', width: '100%', height: '100%' }}>
             Sin convenios o beneficios registrados en el momento.
           </div>
