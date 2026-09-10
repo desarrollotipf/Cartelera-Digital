@@ -1,5 +1,6 @@
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const path = require('path');
+const fs = require('fs');
 
 /**
  * Divide el texto de forma equilibrada para evitar palabras huérfanas en los saltos de línea.
@@ -34,132 +35,121 @@ async function generateBirthdayCardImage(nombre) {
   const cardPath = path.join(__dirname, '../templates/assets/birthday_card_template.jpg');
 
   const bgImage = await loadImage(cardPath);
-  const canvas = createCanvas(723, 1024);
+
+  // Escala 2x (Retina HD) para nitidez cristalina en todas las pantallas
+  const SCALE = 2;
+  const baseWidth = bgImage.width;
+  const baseHeight = bgImage.height;
+
+  const canvas = createCanvas(baseWidth * SCALE, baseHeight * SCALE);
   const ctx = canvas.getContext('2d');
 
-  // 1. Dibujar el fondo institucional base oficial
-  ctx.drawImage(bgImage, 0, 0, 723, 1024);
+  // Suavizado e interpolación de alta calidad
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
-  const centerX = 723 / 2; // 361.5
-  const maxWidth = 500;
+  // Aplicar escala 2x para renderizar vectores, tipografía y sombras con el doble de densidad de píxeles
+  ctx.scale(SCALE, SCALE);
+
+  // 1. Dibujar el fondo institucional base oficial
+  ctx.drawImage(bgImage, 0, 0, baseWidth, baseHeight);
+
+  // Desplazado a la izquierda con líneas compactas y legibles
+  const textCenterX = 220;
+  const maxWidth = 310;
 
   // 2. Nombre del colaborador
   const cleanName = (nombre || 'COLABORADOR').trim().toUpperCase();
-  
-  let nameFontSize = 22;
-  if (cleanName.length > 32) nameFontSize = 15;
-  else if (cleanName.length > 25) nameFontSize = 17;
-  else if (cleanName.length > 18) nameFontSize = 19;
 
-  ctx.font = `bold ${nameFontSize}px Arial, Helvetica, sans-serif`;
-  const nameWidth = ctx.measureText(cleanName).width;
-  const pillWidth = Math.min(540, Math.max(340, nameWidth + 56));
-  const pillHeight = 44;
-  const pillY = 296;
+  let nameFontSize = 21;
+  if (cleanName.length > 32) nameFontSize = 16;
+  else if (cleanName.length > 25) nameFontSize = 18;
 
-  // Sombra suave bajo la pastilla
-  ctx.save();
-  ctx.shadowColor = 'rgba(217, 119, 6, 0.28)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 4;
-
-  // Fondo de pastilla con degradado cálido
-  const grad = ctx.createLinearGradient(centerX - pillWidth / 2, pillY, centerX + pillWidth / 2, pillY + pillHeight);
-  grad.addColorStop(0, '#f59e0b');
-  grad.addColorStop(0.5, '#d97706');
-  grad.addColorStop(1, '#b45309');
-  
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.roundRect(centerX - pillWidth / 2, pillY, pillWidth, pillHeight, 22);
-  ctx.fill();
-  ctx.restore();
-
-  // Borde dorado fino
-  ctx.strokeStyle = '#fef3c7';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.roundRect(centerX - pillWidth / 2, pillY, pillWidth, pillHeight, 22);
-  ctx.stroke();
-
-  // Texto del nombre
   ctx.save();
   ctx.font = `bold ${nameFontSize}px Arial, Helvetica, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetY = 1;
-  ctx.fillText(cleanName, centerX, pillY + pillHeight / 2 + 1);
-  ctx.restore();
-
-  // 3. Mensaje institucional
-  let currentY = 368;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
 
-  // Párrafo 1 (Destacado)
-  ctx.font = 'bold 17.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#1e293b';
-  const p1Lines = wrapText(ctx, '¡Hoy es un día muy especial para celebrar tu vida, tus logros y la gran alegría que aportas a nuestra compañía!', maxWidth);
+  let currentY = 460;
+  const nameLines = wrapText(ctx, cleanName, maxWidth);
+  nameLines.forEach(line => {
+    ctx.fillText(line, textCenterX, currentY);
+    currentY += nameFontSize + 6;
+  });
+  ctx.restore();
+
+  currentY += 18;
+
+  // 3. Mensaje institucional serio y profesional
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = '15px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetY = 1;
+
+  // Párrafo 1
+  const p1 = 'En este día tan especial, la Dirección y todo el equipo de Pollo Fiesta S.A. le extendemos un cordial saludo y nuestras más sinceras felicitaciones por su cumpleaños.';
+  const p1Lines = wrapText(ctx, p1, maxWidth);
   p1Lines.forEach(line => {
-    ctx.fillText(line, centerX, currentY);
-    currentY += 26;
+    ctx.fillText(line, textCenterX, currentY);
+    currentY += 23;
   });
 
-  currentY += 14;
+  currentY += 15;
 
-  // Párrafo 2 (Agradecimiento institucional)
-  ctx.font = '15.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#334155';
-  const p2Lines = wrapText(ctx, 'En nombre de toda la familia Pollo Fiesta S.A., queremos agradecerte de corazón por tu compromiso, dedicación y valioso esfuerzo diario.', maxWidth);
+  // Párrafo 2
+  const p2 = 'Agradecemos profundamente su valioso compromiso, dedicación y entrega diaria al desarrollo de nuestra organización.';
+  const p2Lines = wrapText(ctx, p2, maxWidth);
   p2Lines.forEach(line => {
-    ctx.fillText(line, centerX, currentY);
-    currentY += 24;
+    ctx.fillText(line, textCenterX, currentY);
+    currentY += 23;
   });
 
-  currentY += 14;
+  currentY += 15;
 
-  // Párrafo 3 (Buenos deseos)
-  ctx.font = '15.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#334155';
-  const p3Lines = wrapText(ctx, 'Deseamos que este nuevo año de vida llegue lleno de salud, bendiciones, metas cumplidas y momentos memorables junto a tu familia.', maxWidth);
+  // Párrafo 3
+  const p3 = 'Le deseamos bienestar, salud y muchos éxitos en sus metas personales y profesionales junto a sus seres queridos.';
+  const p3Lines = wrapText(ctx, p3, maxWidth);
   p3Lines.forEach(line => {
-    ctx.fillText(line, centerX, currentY);
-    currentY += 24;
+    ctx.fillText(line, textCenterX, currentY);
+    currentY += 23;
   });
 
   currentY += 18;
 
-  // Línea divisoria elegante
-  ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+  // Línea divisoria
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
   ctx.lineWidth = 1.5;
-  ctx.setLineDash([6, 5]);
   ctx.beginPath();
-  ctx.moveTo(centerX - 160, currentY);
-  ctx.lineTo(centerX + 160, currentY);
+  ctx.moveTo(textCenterX - 100, currentY);
+  ctx.lineTo(textCenterX + 100, currentY);
   ctx.stroke();
-  ctx.setLineDash([]);
 
   currentY += 14;
 
-  // Cierre y Firma Institucional
-  ctx.font = 'bold 20px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#b45309';
-  ctx.fillText('¡Feliz Cumpleaños!', centerX, currentY);
+  // Firma institucional
+  ctx.font = 'bold 13.5px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('GESTIÓN HUMANA', textCenterX, currentY);
 
-  currentY += 26;
+  currentY += 18;
 
-  ctx.font = 'bold 12.5px Arial, Helvetica, sans-serif';
-  ctx.fillStyle = '#1e3a8a';
-  ctx.fillText('GESTIÓN HUMANA & EQUIPO POLLO FIESTA S.A.', centerX, currentY);
+  ctx.font = '11.5px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText('Pollo Fiesta S.A.', textCenterX, currentY);
 
-  // 4. Retornar Buffer JPEG de alta calidad
-  return canvas.toBuffer('image/jpeg', 95);
+  // 4. Retornar Buffer JPEG de ultra alta definición (calidad 98)
+  return canvas.toBuffer('image/jpeg', 98);
 }
 
 module.exports = {
   generateBirthdayCardImage
 };
+
 

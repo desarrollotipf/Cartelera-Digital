@@ -5,7 +5,7 @@
  */
 
 function getEmailSubject(nombre) {
-  return `🎉 ¡Feliz Cumpleaños ${nombre}! - De parte de toda la familia Pollo Fiesta S.A.`;
+  return `¡Feliz Cumpleaños ${nombre}! - Pollo Fiesta S.A.`;
 }
 
 /**
