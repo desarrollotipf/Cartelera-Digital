@@ -36,111 +36,104 @@ async function generateBirthdayCardImage(nombre) {
 
   const bgImage = await loadImage(cardPath);
 
-  // Escala 2x (Retina HD) para nitidez cristalina en todas las pantallas
-  const SCALE = 2;
-  const baseWidth = bgImage.width;
-  const baseHeight = bgImage.height;
-
-  const canvas = createCanvas(baseWidth * SCALE, baseHeight * SCALE);
+  // La nueva plantilla institucional viene en resolución nativa de 1450x2048 px
+  const canvas = createCanvas(bgImage.width, bgImage.height);
   const ctx = canvas.getContext('2d');
 
   // Suavizado e interpolación de alta calidad
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // Aplicar escala 2x para renderizar vectores, tipografía y sombras con el doble de densidad de píxeles
-  ctx.scale(SCALE, SCALE);
-
   // 1. Dibujar el fondo institucional base oficial
-  ctx.drawImage(bgImage, 0, 0, baseWidth, baseHeight);
+  ctx.drawImage(bgImage, 0, 0, bgImage.width, bgImage.height);
 
-  // Desplazado a la izquierda con líneas compactas y legibles
-  const textCenterX = 220;
-  const maxWidth = 310;
+  // Centrado en el área izquierda despejada bajo "¡¡Feliz Cumpleaños!!"
+  const textCenterX = 425;
+  const maxWidth = 620;
 
   // 2. Nombre del colaborador
   const cleanName = (nombre || 'COLABORADOR').trim().toUpperCase();
 
-  let nameFontSize = 21;
-  if (cleanName.length > 32) nameFontSize = 16;
-  else if (cleanName.length > 25) nameFontSize = 18;
+  let nameFontSize = 50;
+  if (cleanName.length > 35) nameFontSize = 40;
+  else if (cleanName.length > 25) nameFontSize = 45;
 
   ctx.save();
   ctx.font = `bold ${nameFontSize}px Arial, Helvetica, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
 
-  let currentY = 460;
+  let currentY = 910;
   const nameLines = wrapText(ctx, cleanName, maxWidth);
   nameLines.forEach(line => {
     ctx.fillText(line, textCenterX, currentY);
-    currentY += nameFontSize + 6;
+    currentY += nameFontSize + 12;
   });
   ctx.restore();
 
-  currentY += 18;
+  currentY += 35;
 
   // 3. Mensaje institucional serio y profesional
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = '15px Arial, Helvetica, sans-serif';
+  ctx.font = '36px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-  ctx.shadowBlur = 3;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 7;
+  ctx.shadowOffsetY = 2;
 
   // Párrafo 1
-  const p1 = 'En este día tan especial, la Dirección y todo el equipo de Pollo Fiesta S.A. le extendemos un cordial saludo y nuestras más sinceras felicitaciones por su cumpleaños.';
+  const p1 = 'Hoy en Pollo Fiesta S.A. celebramos contigo y te deseamos un ¡Feliz cumpleaños!';
   const p1Lines = wrapText(ctx, p1, maxWidth);
   p1Lines.forEach(line => {
     ctx.fillText(line, textCenterX, currentY);
-    currentY += 23;
+    currentY += 50;
   });
 
-  currentY += 15;
+  currentY += 28;
 
   // Párrafo 2
-  const p2 = 'Agradecemos profundamente su valioso compromiso, dedicación y entrega diaria al desarrollo de nuestra organización.';
+  const p2 = 'Que Dios bendiga tu vida, te conceda salud, alegría y muchos éxitos, y que este nuevo año esté lleno de momentos especiales junto a tus seres queridos.';
   const p2Lines = wrapText(ctx, p2, maxWidth);
   p2Lines.forEach(line => {
     ctx.fillText(line, textCenterX, currentY);
-    currentY += 23;
+    currentY += 50;
   });
 
-  currentY += 15;
+  currentY += 28;
 
   // Párrafo 3
-  const p3 = 'Le deseamos bienestar, salud y muchos éxitos en sus metas personales y profesionales junto a sus seres queridos.';
+  const p3 = '¡Gracias por ser parte de nuestro equipo!';
   const p3Lines = wrapText(ctx, p3, maxWidth);
   p3Lines.forEach(line => {
     ctx.fillText(line, textCenterX, currentY);
-    currentY += 23;
+    currentY += 50;
   });
 
-  currentY += 18;
+  currentY += 38;
 
   // Línea divisoria
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.moveTo(textCenterX - 100, currentY);
-  ctx.lineTo(textCenterX + 100, currentY);
+  ctx.moveTo(textCenterX - 180, currentY);
+  ctx.lineTo(textCenterX + 180, currentY);
   ctx.stroke();
 
-  currentY += 14;
+  currentY += 30;
 
   // Firma institucional
-  ctx.font = 'bold 13.5px Arial, Helvetica, sans-serif';
+  ctx.font = 'bold 30px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.fillText('GESTIÓN HUMANA', textCenterX, currentY);
 
-  currentY += 18;
+  currentY += 40;
 
-  ctx.font = '11.5px Arial, Helvetica, sans-serif';
+  ctx.font = '24px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#cbd5e1';
   ctx.fillText('Pollo Fiesta S.A.', textCenterX, currentY);
 
