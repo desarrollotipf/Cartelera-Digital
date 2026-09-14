@@ -139,7 +139,8 @@ const ConveniosModule = ({
             cursor: 'pointer', 
             height: '100%', 
             width: '100%',
-            flex: 1
+            flex: 1,
+            minHeight: 0
           }}
         >
           <div 
@@ -148,17 +149,18 @@ const ConveniosModule = ({
               '--idx': i, 
               borderLeft: `5px solid ${colorCode}`, 
               height: '100%', 
-              width: '100%',
+              width: '100%', 
               flex: 1,
-              padding: metrics.padding,
+              minHeight: 0,
+              padding: item.image ? '1rem 1.25rem' : metrics.padding,
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: metrics.justify,
+              justifyContent: item.image ? 'flex-start' : metrics.justify,
               boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, justifyContent: metrics.justify }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: metrics.gap, marginBottom: item.image ? '0.75rem' : '0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', flex: 1, minHeight: 0, justifyContent: item.image ? 'flex-start' : metrics.justify }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: metrics.gap, marginBottom: item.image ? '0.65rem' : '0', flexShrink: 0 }}>
                 <div 
                   className="hr-icon-circle bday-avatar-animated" 
                   style={{ 
@@ -166,11 +168,11 @@ const ConveniosModule = ({
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     background: colorCode + '25', 
-                    width: metrics.iconBoxSize,
-                    height: metrics.iconBoxSize,
-                    minWidth: metrics.iconBoxSize,
-                    minHeight: metrics.iconBoxSize,
-                    borderRadius: '16px',
+                    width: metrics.iconBoxSize, 
+                    height: metrics.iconBoxSize, 
+                    minWidth: metrics.iconBoxSize, 
+                    minHeight: metrics.iconBoxSize, 
+                    borderRadius: '16px', 
                     flexShrink: 0 
                   }}
                 >
@@ -202,7 +204,14 @@ const ConveniosModule = ({
                       fontSize: metrics.descSize, 
                       lineHeight: metrics.descLineHeight, 
                       margin: '0', 
-                      whiteSpace: 'pre-wrap' 
+                      whiteSpace: item.image ? 'normal' : 'pre-wrap',
+                      ...(item.image ? {
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      } : {})
                     }}>
                       {item.description || item.desc || item.details}
                     </p>
@@ -210,8 +219,31 @@ const ConveniosModule = ({
                 </div>
               </div>
               {item.image && (
-                <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', flex: 1, maxHeight: metrics.imageMaxHeight }}>
-                  <img src={item.image} alt="Convenio Adjunto" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', objectFit: 'contain' }} loading="lazy" />
+                <div style={{
+                  marginTop: '0.65rem',
+                  width: '100%',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  border: '1px solid var(--border)',
+                  display: 'flex',
+                  flex: 1,
+                  minHeight: 0,
+                  height: '100%',
+                  position: 'relative',
+                  backgroundColor: 'var(--bg-secondary)'
+                }}>
+                  <img
+                    src={item.image}
+                    alt="Convenio Adjunto"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'block',
+                      objectFit: 'cover',
+                      objectPosition: 'center'
+                    }}
+                    loading="lazy"
+                  />
                 </div>
               )}
             </div>

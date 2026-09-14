@@ -101,46 +101,24 @@ const HrModule = ({
               const hasImage = Boolean(item.image);
 
               return (
-                <div 
-                  key={item.id || i} 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    height: '100%',
-                    flex: 1,
-                    minHeight: hrCount <= 3 ? 0 : '180px'
-                  }}
-                >
-                  <motion.div
-                    layout
-                    className={`canva-interactive-element ${String(selectedElementId) === String(item.id || i) ? 'canva-interactive-selected' : ''}`}
-                    animate={{ 
-                      scale: String(selectedElementId) === String(item.id || i) ? 1.05 : 1, 
-                      zIndex: String(selectedElementId) === String(item.id || i) ? 9999 : 1 
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                    onClick={(e) => {
-                      if (onElementClick) {
-                        e.stopPropagation();
-                        onElementClick('hr', item.id || i);
-                      } else if (onSelectHr) {
-                        e.stopPropagation();
-                        onSelectHr(item);
-                      }
-                    }}
+                  <div 
+                    key={item.id || i} 
                     style={{ 
-                      flex: 1, 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default', 
                       height: '100%',
-                      width: '100%' 
+                      flex: 1,
+                      minHeight: 0
                     }}
                   >
-                    <div 
-                      id={`hr-card-${item.id || i}`} 
-                      data-hr-id={item.id || i}
-                      data-hr-index={i}
+                    <motion.div
+                      layout
+                      className={`canva-interactive-element ${String(selectedElementId) === String(item.id || i) ? 'canva-interactive-selected' : ''}`}
+                      animate={{ 
+                        scale: String(selectedElementId) === String(item.id || i) ? 1.05 : 1, 
+                        zIndex: String(selectedElementId) === String(item.id || i) ? 9999 : 1 
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 24 }}
                       onClick={(e) => {
                         if (onElementClick) {
                           e.stopPropagation();
@@ -150,79 +128,133 @@ const HrModule = ({
                           onSelectHr(item);
                         }
                       }}
-                      className={`hr-stage-card stagger-card-pop ${hasImage ? 'hr-card-with-image' : 'hr-card-text-only'}`} 
                       style={{ 
-                        '--idx': i, 
-                        height: '100%', 
-                        width: '100%', 
-                        flex: 1,
-                        padding: metrics.padding,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: metrics.justify,
-                        cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default',
-                        boxSizing: 'border-box'
+                        flex: 1, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default', 
+                        height: '100%',
+                        width: '100%',
+                        minHeight: 0
                       }}
                     >
-                      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', flex: 1, justifyContent: metrics.justify }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: metrics.gap, marginBottom: hasImage ? '0.75rem' : '0' }}>
-                          <div 
-                            className="hr-icon-circle" 
-                            style={{ 
-                              width: metrics.iconBoxSize, 
-                              height: metrics.iconBoxSize, 
-                              minWidth: metrics.iconBoxSize, 
-                              minHeight: metrics.iconBoxSize, 
-                              borderRadius: '14px', 
-                              background: 'rgba(225, 29, 72, 0.1)', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              flexShrink: 0 
-                            }}
-                          >
-                            <Pin size={metrics.iconSize} color="#e11d48" strokeWidth={2.3} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ fontSize: metrics.titleSize, fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                              {item.title}
+                      <div 
+                        id={`hr-card-${item.id || i}`} 
+                        data-hr-id={item.id || i}
+                        data-hr-index={i}
+                        onClick={(e) => {
+                          if (onElementClick) {
+                            e.stopPropagation();
+                            onElementClick('hr', item.id || i);
+                          } else if (onSelectHr) {
+                            e.stopPropagation();
+                            onSelectHr(item);
+                          }
+                        }}
+                        className={`hr-stage-card stagger-card-pop ${hasImage ? 'hr-card-with-image' : 'hr-card-text-only'}`} 
+                        style={{ 
+                          '--idx': i, 
+                          height: '100%', 
+                          width: '100%', 
+                          flex: 1,
+                          minHeight: 0,
+                          padding: hasImage ? (hrCount === 1 ? '1.5rem 1.75rem' : '1.15rem 1.35rem') : metrics.padding,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: hasImage ? 'flex-start' : metrics.justify,
+                          cursor: (onElementClick || onSelectHr) ? 'pointer' : 'default',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', flex: 1, minHeight: 0, justifyContent: hasImage ? 'flex-start' : metrics.justify }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: metrics.gap, marginBottom: hasImage ? '0.65rem' : '0', flexShrink: 0 }}>
+                            <div 
+                              className="hr-icon-circle" 
+                              style={{ 
+                                width: metrics.iconBoxSize, 
+                                height: metrics.iconBoxSize, 
+                                minWidth: metrics.iconBoxSize, 
+                                minHeight: metrics.iconBoxSize, 
+                                borderRadius: '14px', 
+                                background: 'rgba(225, 29, 72, 0.1)', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                flexShrink: 0 
+                              }}
+                            >
+                              <Pin size={metrics.iconSize} color="#e11d48" strokeWidth={2.3} />
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: metrics.badgeSize, color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Comunicado HR</span>
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                fontSize: metrics.badgeSize, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                                padding: '0.2rem 0.65rem', borderRadius: '999px',
-                                background: item.type === 'alert' ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
-                                color: item.type === 'alert' ? '#ef4444' : '#22c55e',
-                                border: `1px solid ${item.type === 'alert' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'}`,
-                              }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', display: 'inline-block', flexShrink: 0 }} />
-                                {item.type === 'alert' ? 'Alerta' : 'General'}
-                              </span>
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ fontSize: metrics.titleSize, fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                                {item.title}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: metrics.badgeSize, color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Comunicado HR</span>
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                  fontSize: metrics.badgeSize, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                                  padding: '0.2rem 0.65rem', borderRadius: '999px',
+                                  background: item.type === 'alert' ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
+                                  color: item.type === 'alert' ? '#ef4444' : '#22c55e',
+                                  border: `1px solid ${item.type === 'alert' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'}`,
+                                }}>
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', display: 'inline-block', flexShrink: 0 }} />
+                                  {item.type === 'alert' ? 'Alerta' : 'General'}
+                                </span>
+                              </div>
+                              {item.desc && (
+                                <p style={{ 
+                                  color: 'var(--text-secondary)', 
+                                  fontSize: metrics.descSize, 
+                                  lineHeight: metrics.descLineHeight, 
+                                  margin: '0', 
+                                  whiteSpace: hasImage ? 'normal' : 'pre-wrap',
+                                  ...(hasImage ? {
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: hrCount === 1 ? 3 : 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  } : {})
+                                }}>
+                                  {item.desc}
+                                </p>
+                              )}
                             </div>
-                            {item.desc && (
-                              <p style={{ 
-                                color: 'var(--text-secondary)', 
-                                fontSize: metrics.descSize, 
-                                lineHeight: metrics.descLineHeight, 
-                                margin: '0', 
-                                whiteSpace: 'pre-wrap' 
-                              }}>
-                                {item.desc}
-                              </p>
-                            )}
                           </div>
+                          {hasImage && (
+                            <div style={{
+                              marginTop: '0.65rem',
+                              width: '100%',
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              flex: 1,
+                              minHeight: 0,
+                              height: '100%',
+                              position: 'relative',
+                              backgroundColor: 'var(--bg-secondary)',
+                              border: '1px solid var(--border)'
+                            }}>
+                              <img
+                                src={item.image}
+                                alt="HR Adjunto"
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  display: 'block',
+                                  objectFit: 'cover',
+                                  objectPosition: 'center'
+                                }}
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
                         </div>
-                        {hasImage && (
-                          <div style={{ marginTop: '0.85rem', width: '100%', borderRadius: '12px', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', flex: 1, minHeight: '180px', maxHeight: hrCount === 1 ? '44vh' : '26vh' }}>
-                            <img src={item.image} alt="HR Adjunto" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', objectFit: 'contain' }} loading="lazy" />
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </motion.div>
-                </div>
+                    </motion.div>
+                  </div>
               );
             })}
             {(data?.hrModule || []).length === 0 && (

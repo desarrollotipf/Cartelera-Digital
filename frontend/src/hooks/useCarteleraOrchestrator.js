@@ -261,9 +261,9 @@ export function useCarteleraOrchestrator(
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
-      // La rotación en videos se orquesta a través del evento de finalización al terminar 3 videos
-      // Safety watchdog de 180s por si un reproductor externo queda inactivo
-      const videoWatchdog = 180000;
+      // La rotación en videos se orquesta a través del evento de finalización al terminar los videos del ciclo
+      // Safety watchdog de 90s por si un reproductor externo queda inactivo o sin conexión
+      const videoWatchdog = 90000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(5));
       }, videoWatchdog);

@@ -46,26 +46,20 @@ const VideosModule = ({
     const nextIndex = (videoIndex + 1) % validVideos.length;
 
     // En Modo TV / Cartelera normal:
-    // Al terminar tres videos (o 3 reproducciones), pasa con animación fluida a convenios
-    if (videosPlayedThisCycle.current < 3 && validVideos.length > 0) {
-      if (validVideos.length > 1) {
-        setIsDeckTransitioning(true);
-        setVideoIndex(nextIndex);
-      } else {
-        // Si hay solo 1 video, reiniciar su reproducción hasta completar los 3 pases
-        const videoEl = document.querySelector('video');
-        if (videoEl) {
-          videoEl.currentTime = 0;
-          videoEl.play().catch(() => {});
-        }
-      }
+    // Cantidad máxima de videos a reproducir en este ciclo (un pase por cada video disponible, máx 3)
+    const maxVideosThisCycle = Math.max(1, Math.min(validVideos.length, 3));
+
+    if (videosPlayedThisCycle.current < maxVideosThisCycle && validVideos.length > 1) {
+      // Si hay más videos disponibles en la cola de este ciclo, pasar al siguiente video
+      setIsDeckTransitioning(true);
+      setVideoIndex(nextIndex);
     } else {
-      // Al terminar 3 videos en el ciclo, avanza con la transición FlowingMenu a Convenios
+      // Cuando los videos terminan (o el único video termina), la rotación de la cartelera sigue normal al siguiente módulo
       videosPlayedThisCycle.current = 0;
       setVideoIndex(nextIndex);
       goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }
-  }, [validVideos, isEditorOpen, isLivePreview, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
+  }, [validVideos, isEditorOpen, isLivePreview, overrideStep, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
 
   // Función para descartar de inmediato videos caídos o bloqueados
   const markVideoAsFailed = React.useCallback((url) => {
@@ -122,7 +116,8 @@ const VideosModule = ({
           // YouTube: YT.PlayerState.ENDED (0)
           const isYTEnded = (msg.event === 'onStateChange' && msg.info === 0) ||
                             (msg.info?.playerState === 0) ||
-                            (msg.event === 'infoDelivery' && msg.info?.playerState === 0);
+                            (msg.event === 'infoDelivery' && msg.info?.playerState === 0) ||
+                            (msg.info?.currentTime && msg.info?.duration && (msg.info.duration - msg.info.currentTime <= 0.6));
           
           // Vimeo: event === 'finish' o 'ended'
           const isVimeoEnded = msg.event === 'finish' || msg.event === 'ended';
@@ -279,14 +274,23 @@ const VideosModule = ({
                   {safeUrl && !vid.isPromo && isSelected ? (
                     <div className="cinema-ambilight-container" style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', background: '#000', borderRadius: '16px' }}>
                       {isYouTube && youtubeId ? (
-                        /* OPCIÓN B1: YouTube Iframe Oficial Nocookie */
+                        /* OPCIÓN B1: YouTube Iframe Oficial con API js y origin */
                         <iframe
                           key={`yt-active-${vidId}-${activeIdx}`}
-                          src={`https://www.youtube-nocookie.com/embed/${youtubeId}?enablejsapi=1&autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1`}
+                          src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}`}
                           title={vid.name || `Video ${vidId}`}
                           onLoad={(e) => {
                             try {
-                              e.target.contentWindow?.postMessage('{"event":"listening","id":1,"channel":"widget"}', '*');
+                              const win = e.target.contentWindow;
+                              if (win) {
+                                win.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*');
+                                win.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'] }), '*');
+                                setTimeout(() => {
+                                  try {
+                                    win.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'] }), '*');
+                                  } catch (_) {}
+                                }, 1200);
+                              }
                             } catch (_) {}
                           }}
                           onError={() => markVideoAsFailed(safeUrl)}
@@ -300,6 +304,11 @@ const VideosModule = ({
                           key={`vimeo-active-${vidId}-${activeIdx}`}
                           src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=1&loop=0&autopause=0`}
                           title={vid.name || `Vimeo ${vidId}`}
+                          onLoad={(e) => {
+                            try {
+                              e.target.contentWindow?.postMessage(JSON.stringify({ method: 'addEventListener', value: 'ended' }), '*');
+                            } catch (_) {}
+                          }}
                           onError={() => markVideoAsFailed(safeUrl)}
                           allow="autoplay; fullscreen; picture-in-picture"
                           allowFullScreen
