@@ -71,6 +71,8 @@ export default function CarteleraPage({
     globalEventIndex,
     videoIndex,
     setVideoIndex,
+    bdayBatchIndex,
+    setBdayBatchIndex,
     isDeckTransitioning,
     setIsDeckTransitioning,
     videoOrientations,
@@ -124,6 +126,27 @@ export default function CarteleraPage({
   const { user } = usePortalAuth();
   const userScope = user?.userScope || 'RRHH';
   const isHseqUser = userScope === 'HSEQ';
+
+  // Si en el mes cumplen más de 20 personas, dividir en dos tandas alternadas por rotación
+  const displayedBirthdays = useMemo(() => {
+    if (!birthdays || birthdays.length <= 20) {
+      return birthdays || [];
+    }
+    const half = Math.ceil(birthdays.length / 2);
+    return bdayBatchIndex === 0 ? birthdays.slice(0, half) : birthdays.slice(half);
+  }, [birthdays, bdayBatchIndex]);
+
+  const bdayBatchInfo = useMemo(() => {
+    if (!birthdays || birthdays.length <= 20) return null;
+    const total = birthdays.length;
+    const half = Math.ceil(total / 2);
+    return {
+      part: bdayBatchIndex === 0 ? 1 : 2,
+      totalParts: 2,
+      count: bdayBatchIndex === 0 ? half : total - half,
+      totalBirthdays: total
+    };
+  }, [birthdays, bdayBatchIndex]);
 
   const openEditor = (tab) => {
     if (isTVMode || isLivePreview) return;
@@ -335,7 +358,9 @@ export default function CarteleraPage({
       {targetStep === 2 && (
         <BirthdaysModule
           bdayTitle={data?.bdayTitle}
-          birthdays={birthdays}
+          birthdays={displayedBirthdays}
+          totalMonthlyCount={birthdays?.length || 0}
+          bdayBatchInfo={bdayBatchInfo}
           todayBirthdays={todayBirthdays}
           isLivePreview={isLivePreview}
           isTVMode={isTVMode}

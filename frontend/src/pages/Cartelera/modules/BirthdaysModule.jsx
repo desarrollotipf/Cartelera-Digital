@@ -6,6 +6,8 @@ import { formatShortName } from '../../../utils/nameFormatter';
 const BirthdaysModule = ({
   bdayTitle,
   birthdays,
+  totalMonthlyCount,
+  bdayBatchInfo,
   todayBirthdays,
   isLivePreview,
   isTVMode,
@@ -67,7 +69,7 @@ const BirthdaysModule = ({
           </div>
         </div>
         <span className="month-badge" style={{ fontSize: '1rem', padding: '0.5rem 1.5rem', background: 'linear-gradient(135deg, var(--primary) 0%, #be123c 100%)', color: '#fff', border: 'none', boxShadow: '0 4px 18px rgba(225, 29, 72, 0.45)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <PartyPopper size={20} /> Este Mes
+          <PartyPopper size={20} /> {bdayBatchInfo ? `Este Mes (Tanda ${bdayBatchInfo.part} de ${bdayBatchInfo.totalParts})` : 'Este Mes'}
         </span>
       </div>
 
@@ -76,10 +78,10 @@ const BirthdaysModule = ({
         <div className="bday-weekly-sidebar" ref={bdayGridRef}>
           <div className="bday-weekly-header">
             <span style={{ fontWeight: 900, fontSize: '1.35rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Cake size={24} color="#d97706" /> En el mes ({birthdays.length})
+              <Cake size={24} color="#d97706" /> En el mes {bdayBatchInfo ? `(${bdayBatchInfo.count} de ${bdayBatchInfo.totalBirthdays})` : `(${birthdays.length})`}
             </span>
-            <span style={{ fontSize: '0.85rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.25rem 0.75rem', borderRadius: '14px', fontWeight: 800 }}>
-              MENSUAL
+            <span style={{ fontSize: '0.85rem', background: bdayBatchInfo ? 'linear-gradient(135deg, #0284c7, #0b4274)' : 'var(--primary-light)', color: bdayBatchInfo ? '#fff' : 'var(--primary)', padding: '0.25rem 0.75rem', borderRadius: '14px', fontWeight: 800 }}>
+              {bdayBatchInfo ? `GRUPO ${bdayBatchInfo.part}/${bdayBatchInfo.totalParts}` : 'MENSUAL'}
             </span>
           </div>
 

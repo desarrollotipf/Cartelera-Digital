@@ -20,6 +20,7 @@ export function useCarteleraOrchestrator(
   
   const [globalEventIndex, setGlobalEventIndex] = useState(0);
   const [videoIndex, setVideoIndex] = useState(0);
+  const [bdayBatchIndex, setBdayBatchIndex] = useState(0);
   const [isDeckTransitioning, setIsDeckTransitioning] = useState(false);
   const [videoOrientations, setVideoOrientations] = useState({});
   const videosPlayedThisCycle = useRef(0);
@@ -59,6 +60,11 @@ export function useCarteleraOrchestrator(
 
     const fromStep = currentStepRef.current;
     if (targetStep === fromStep) return;
+
+    // Si salimos de Cumpleaños (paso 2) y hay más de 20 cumpleañeros, alternar lote (mitad 1 <-> mitad 2)
+    if (fromStep === 2 && (birthdaysRef.current?.length || 0) > 20) {
+      setBdayBatchIndex(prev => (prev === 0 ? 1 : 0));
+    }
 
     setTransitioningToStep(targetStep);
     setFlowingActiveIdx(fromStep);
@@ -228,11 +234,13 @@ export function useCarteleraOrchestrator(
       }, hrWatchdog);
 
     } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS (ESCALERA DINÁMICA)
-      const bdayCount = birthdays?.length || 0;
+      const totalCount = birthdays?.length || 0;
+      // Si en el mes cumplen más de 20 personas, se muestra la mitad en una rotación y la otra mitad en la siguiente
+      const bdayCount = totalCount > 20 ? Math.ceil(totalCount / 2) : totalCount;
       const isGrid3 = (todayBirthdays?.length || 0) === 0;
       const rowCount = isGrid3 ? Math.ceil(bdayCount / 3) : bdayCount;
       const overflowLimit = isGrid3 ? 6 : 3;
-      // Duración calibrada para que la escalera eléctrica complete la exhibición de todos los cumpleañeros
+      // Duración calibrada para que la escalera eléctrica complete la exhibición del lote que se está mostrando
       const bdayDuration = bdayCount > overflowLimit
         ? Math.max(16000, (rowCount * 2800) + 2000)
         : rotationMs;
@@ -300,6 +308,8 @@ export function useCarteleraOrchestrator(
     
     videoIndex,
     setVideoIndex,
+    bdayBatchIndex,
+    setBdayBatchIndex,
     isDeckTransitioning,
     setIsDeckTransitioning,
     videoOrientations,
