@@ -7,6 +7,7 @@ const fs = require('fs');
 const { isAzureStorageConfigured, uploadToBlob, deleteFromBlob } = require('../services/azureStorageService');
 const { processAndDownloadVideo } = require('../services/videoDownloaderService');
 const { compressAndOptimizeVideo } = require('../services/videoCompressorService');
+const { compressAndOptimizeImage } = require('../services/imageCompressorService');
 
 // Configure multer storage temporal
 const storage = multer.diskStorage({
@@ -114,14 +115,15 @@ router.post('/', upload.single('file'), async (req, res) => {
       });
     }
 
-    // Imagen
+    // Imagen: comprimir y optimizar sin pérdida visual perceptible
+    const optResult = await compressAndOptimizeImage(req.file.path);
     let fileUrl = `/uploads/${req.file.filename}`;
     
     // Subir a Azure Blob Storage si está configurado
     if (isAzureStorageConfigured()) {
       try {
         fileUrl = await uploadToBlob(req.file.path, req.file.filename, req.file.mimetype);
-        console.log(' [UploadRoutes] Imagen subida a Azure Blob Storage:', fileUrl);
+        console.log(' [UploadRoutes] Imagen optimizada subida a Azure Blob Storage:', fileUrl);
       } catch (blobErr) {
         console.warn(' [UploadRoutes] Error subiendo imagen a Azure Blob:', blobErr.message);
       }
@@ -129,8 +131,14 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Archivo subido correctamente',
-      data: { url: fileUrl, type: 'image' }
+      message: 'Imagen subida y optimizada correctamente',
+      data: { 
+        url: fileUrl, 
+        type: 'image',
+        sizeBefore: optResult.sizeBefore,
+        sizeAfter: optResult.sizeAfter,
+        savedPercent: optResult.savedPercent
+      }
     });
   } catch (error) {
     console.error(' [UploadRoutes] Error al procesar archivo:', error);
