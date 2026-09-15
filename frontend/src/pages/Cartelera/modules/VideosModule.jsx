@@ -204,7 +204,7 @@ const VideosModule = ({
       transition={{ duration: 0.35 }}
       className="block-section"
       onClick={() => openEditor && openEditor('videos')}
-      style={{ cursor: isTVMode ? 'default' : 'pointer', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0, width: '100%', willChange: 'transform' }}
+      style={{ cursor: isTVMode ? 'default' : 'pointer', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', width: '100%', willChange: 'transform' }}
     >
       <div className="orbital-video-stage">
         <div className="orbital-arc-wheel">

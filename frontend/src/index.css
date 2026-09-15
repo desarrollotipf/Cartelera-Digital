@@ -9,14 +9,13 @@
      AQUÍ PUEDES AJUSTAR LA OPACIDAD POR DEFECTO DE TODAS LAS TARJETAS:
      Cambia --mod-opacity (ej: 0.70 para más transparente, 0.95 para más sólido)
      ──────────────────────────────────────────────────────── */
-  --mod-opacity: 0.72;
-  /* Opacidad de los bloques contenedores (Glassmorphism sutil y elegante) */
-  --bg-block: rgba(255, 255, 255, var(--mod-opacity, 0.72));
+  --mod-opacity: 0.88;
+  /* Opacidad global vinculada a todas las tarjetas en Modo Claro */
   --bg: #F1F5F9;
   /* Fondo perla claro elegante y brillante */
-  --bg-card: #FFFFFF;
-  /* Las tarjetas son blanco sólido 100% sin transparencia */
-  --bg-secondary: #F8FAFC;
+  --bg-card: rgba(255, 255, 255, var(--mod-opacity, 0.88));
+  /* Fondo de tarjeta blanco cristal ultra limpio */
+  --bg-secondary: rgba(241, 245, 249, var(--mod-opacity, 0.88));
   /* Fondo secundario gris platino */
   --bg-input: #FFFFFF;
   --bg-input-focus: #F8FAFC;
@@ -1329,15 +1328,13 @@ body {
 
 
 
-/* Block Section: Bloque contenedor con transparencia y efecto cristal */
+/* Block Section */
 .block-section {
-  background: var(--bg-block, rgba(255, 255, 255, var(--mod-opacity, 0.72))) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  border: none;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  box-shadow: 0 12px 35px -5px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -2694,14 +2691,14 @@ body {
 }
 
 .hr-stage-card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 1.85rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: var(--shadow-card);
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
   position: relative;
   overflow: hidden;
@@ -2728,8 +2725,8 @@ body {
 
 .hr-stage-card:hover {
   transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 20px 35px -5px rgba(15, 23, 42, 0.18), 0 8px 16px -4px rgba(15, 23, 42, 0.08) !important;
-  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 
 .hr-stage-card.hr-card-text-only {
@@ -2738,9 +2735,8 @@ body {
   min-height: 0;
   padding: 1.35rem 1.6rem;
   gap: 0.85rem;
-  background: #FFFFFF !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
 }
 
 .hr-stage-card.hr-card-with-image {
@@ -2749,7 +2745,6 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #FFFFFF !important;
 }
 
 /* Birthday Full Stage Showcase (30% Lateral / 70% Sala de Felicitación) */
@@ -2776,11 +2771,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  background: #FFFFFF !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
-  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   min-height: 0;
   backface-visibility: hidden;
@@ -2806,14 +2801,14 @@ body {
 }
 
 .bday-month-card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 6px 18px -2px rgba(15, 23, 42, 0.09), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: var(--shadow-sm);
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -2821,8 +2816,8 @@ body {
 
 .bday-month-card:hover {
   transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 14px 28px -4px rgba(15, 23, 42, 0.16) !important;
-  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-card);
+  border-color: var(--primary);
 }
 
 /* Panel Central 70% - Gran Sala de Felicitación (Congratulatory Stage) */
@@ -2928,14 +2923,14 @@ body {
 }
 
 .kpi-stage-card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 1.5rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: var(--shadow-card);
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -2943,8 +2938,8 @@ body {
 
 .kpi-stage-card:hover {
   transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 20px 35px -5px rgba(15, 23, 42, 0.18), 0 8px 16px -4px rgba(15, 23, 42, 0.08) !important;
-  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 
 /* ── 5 INTEGRATED MODULE SIGNATURE ANIMATIONS (Distinct & Alive) ── */

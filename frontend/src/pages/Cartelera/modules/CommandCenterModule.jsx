@@ -91,7 +91,7 @@ const CommandCenterModule = ({
           </div>
 
           {/* COLUMNA PRINCIPAL (70%): Última Hora Colombia Live Feed */}
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(15, 23, 42, 0.08)', display: 'flex', flexDirection: 'column', padding: '1.75rem 2rem', overflow: 'hidden', boxShadow: '0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06)' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '1.75rem 2rem', overflow: 'hidden', boxShadow: '0 12px 35px rgba(0,0,0,0.25)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.85rem', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center' }}><Newspaper size={32} color="#38bdf8" strokeWidth={2.2} /></span>
