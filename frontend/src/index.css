@@ -912,11 +912,11 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: rgba(234, 179, 8, 0.12);
-  border: 1.5px solid rgba(234, 179, 8, 0.5);
+  background: rgba(2, 132, 199, 0.10);
+  border: 1.5px solid rgba(2, 132, 199, 0.45);
   border-radius: var(--radius-md);
   padding: 0.45rem 1rem;
-  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.16);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
   backdrop-filter: blur(8px);
 }
 
@@ -924,8 +924,8 @@ body {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #eab308;
-  box-shadow: 0 0 10px #facc15;
+  background: #0284c7;
+  box-shadow: 0 0 10px #38bdf8;
   display: inline-block;
   animation: pulse-icon 2s infinite ease-in-out;
 }
@@ -947,33 +947,33 @@ body {
   font-family: 'Outfit', monospace;
   font-weight: 800;
   font-size: 1.15rem;
-  color: #eab308;
+  color: #0284c7;
   line-height: 1;
   letter-spacing: 0.5px;
-  text-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+  text-shadow: 0 0 12px rgba(2, 132, 199, 0.25);
 }
 
 .clock-date {
   font-size: 0.68rem;
-  color: #ca8a04;
+  color: #0369a1;
   font-weight: 700;
   text-transform: capitalize;
   margin-top: 2px;
 }
 
 .is-tv-mode .clock-card {
-  background: rgba(234, 179, 8, 0.16);
-  border-color: rgba(234, 179, 8, 0.6);
-  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.25);
+  background: rgba(2, 132, 199, 0.14);
+  border-color: rgba(2, 132, 199, 0.55);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.22);
 }
 
 .is-tv-mode .clock-time {
-  color: #facc15;
-  text-shadow: 0 0 14px rgba(250, 204, 21, 0.5);
+  color: #0284c7;
+  text-shadow: 0 0 14px rgba(2, 132, 199, 0.35);
 }
 
 .is-tv-mode .clock-date {
-  color: #fde047;
+  color: #0369a1;
 }
 
 .topbar-actions {
