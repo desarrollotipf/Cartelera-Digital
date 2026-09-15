@@ -2,6 +2,16 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Video } from 'lucide-react';
 
+const resolveMediaUrl = (url) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  const uploadIdx = trimmed.indexOf('/uploads/');
+  if (uploadIdx !== -1) {
+    return trimmed.substring(uploadIdx);
+  }
+  return trimmed;
+};
+
 const VideosModule = ({
   data,
   videoIndex,
@@ -22,9 +32,14 @@ const VideosModule = ({
   // Registro de URLs de videos con fallos, bloqueos o errores de embed para excluirlos automáticamente
   const [failedUrls, setFailedUrls] = React.useState(new Set());
 
-  // Lista de videos limpios y 100% funcionales (excluyendo cualquier video de demostración o caído)
+  // Lista de videos limpios y 100% funcionales (normalizando URLs de uploads para evitar fallos de conexión)
   const validVideos = React.useMemo(() => {
-    return (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !failedUrls.has(v.url.trim()));
+    return (data?.videos || [])
+      .map(v => ({
+        ...v,
+        url: resolveMediaUrl(v?.url)
+      }))
+      .filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !failedUrls.has(v.url.trim()));
   }, [data?.videos, failedUrls]);
 
   const handleVideoEnded = React.useCallback(() => {
@@ -32,7 +47,7 @@ const VideosModule = ({
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       if (validVideos.length > 1) {
         setIsDeckTransitioning(true);
-        setVideoIndex((videoIndex + 1) % validVideos.length);
+        setVideoIndex(prev => (prev + 1) % validVideos.length);
       }
       return;
     }
@@ -45,21 +60,34 @@ const VideosModule = ({
     videosPlayedThisCycle.current += 1;
     const nextIndex = (videoIndex + 1) % validVideos.length;
 
-    // En Modo TV / Cartelera normal:
-    // Cantidad máxima de videos a reproducir en este ciclo (un pase por cada video disponible, máx 3)
+    // Regla estricta acordada:
+    // Mínimo todos los que hayan si hay < 3 (ej. 1 o 2), máximo 3 videos por ciclo
     const maxVideosThisCycle = Math.max(1, Math.min(validVideos.length, 3));
 
     if (videosPlayedThisCycle.current < maxVideosThisCycle && validVideos.length > 1) {
-      // Si hay más videos disponibles en la cola de este ciclo, pasar al siguiente video
+      // Si aún faltan videos por reproducir en este ciclo (ej: video 2 o 3), avanzar al siguiente video
       setIsDeckTransitioning(true);
       setVideoIndex(nextIndex);
     } else {
-      // Cuando los videos terminan (o el único video termina), la rotación de la cartelera sigue normal al siguiente módulo
+      // Cuando se completa la cuota de videos del ciclo, avanzar de módulo en la cartelera
       videosPlayedThisCycle.current = 0;
       setVideoIndex(nextIndex);
       goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }
   }, [validVideos, isEditorOpen, isLivePreview, overrideStep, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
+
+  // Watchdog individual de seguridad (60s) para asegurar que el video en curso avance si no emite evento ended
+  useEffect(() => {
+    if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined) || !isTVMode) return;
+    if (validVideos.length === 0) return;
+
+    const timer = setTimeout(() => {
+      console.log('[VideosModule] Watchdog individual de video activado (60s), avanzando...');
+      handleVideoEnded();
+    }, 60000);
+
+    return () => clearTimeout(timer);
+  }, [videoIndex, validVideos.length, isEditorOpen, isLivePreview, overrideStep, isTVMode, handleVideoEnded]);
 
   // Función para descartar de inmediato videos caídos o bloqueados
   const markVideoAsFailed = React.useCallback((url) => {

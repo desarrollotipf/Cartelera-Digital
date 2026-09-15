@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import LiveClock from '../../../components/LiveClock';
 import {
   Tv, Palette, ExternalLink, Sparkles, Zap, Megaphone, Cake, Pin, Video, Shield, HeartPulse, Leaf, Award
 } from 'lucide-react';
@@ -99,20 +98,6 @@ export default function CarteleraDashboardView({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', zIndex: 1 }}>
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
-            padding: '0.85rem 1.5rem',
-            textAlign: 'right',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#f8fafc', fontFamily: 'monospace' }}>
-              <LiveClock />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* LAS 2 OPCIONES MONUMENTALES EN GRANDE */}

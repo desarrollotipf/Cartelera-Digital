@@ -1,4 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+
+/**
+ * Función para desplazar automáticamente el contenido del modal de arriba a abajo
+ * a una velocidad constante y esperar hasta que la imagen o contenido se visualice por completo.
+ */
+function autoScrollModalContent(modalEl) {
+  return new Promise((resolve) => {
+    if (!modalEl) {
+      setTimeout(resolve, 3200);
+      return;
+    }
+
+    modalEl.scrollTop = 0;
+
+    const executeScroll = () => {
+      const maxScroll = modalEl.scrollHeight - modalEl.clientHeight;
+
+      if (maxScroll <= 20) {
+        // No hay scroll necesario (cabe completo en la ventana del modal). Esperar lectura y resolver.
+        setTimeout(resolve, 3800);
+        return;
+      }
+
+      // Velocidad suave y confortable de lectura (~65px/segundo)
+      const scrollDuration = Math.min(8.5, Math.max(3.2, maxScroll / 65));
+
+      // 1. Pausa inicial de 1.4s para leer título y descripción superior
+      setTimeout(() => {
+        gsap.to(modalEl, {
+          scrollTop: maxScroll,
+          duration: scrollDuration,
+          ease: 'power1.inOut',
+          onComplete: () => {
+            // 2. Pausa al final (2.0s) una vez que la imagen o afiche se visualiza por completo
+            setTimeout(resolve, 2000);
+          }
+        });
+      }, 1400);
+    };
+
+    const img = modalEl.querySelector('img');
+    if (img && !img.complete) {
+      img.onload = () => setTimeout(executeScroll, 120);
+      setTimeout(executeScroll, 600);
+    } else {
+      setTimeout(executeScroll, 250);
+    }
+  });
+}
 
 /**
  * Hook para simular la interacción automática del cursor virtual en modo TV
@@ -105,13 +155,17 @@ export function useFakeMouseAutoPlay({
               setHrModalRef.current(hrItem);
             }
 
-            // Esperar 4.2 segundos para lectura cómoda del aviso en el modal
-            await new Promise(r => setTimeout(r, 4200));
+            // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
+            await new Promise(r => setTimeout(r, 450));
+            if (!isMounted) return;
+
+            const modalEl = document.getElementById('hr-modal-content');
+            await autoScrollModalContent(modalEl);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setHrModalRef.current) setHrModalRef.current(null);
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 700));
             if (!isMounted) return;
           }
         }
@@ -188,13 +242,17 @@ export function useFakeMouseAutoPlay({
               setHseqModalRef.current(hseqItem);
             }
 
-            // Esperar 4.2 segundos para lectura de la normativa
-            await new Promise(r => setTimeout(r, 4200));
+            // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
+            await new Promise(r => setTimeout(r, 450));
+            if (!isMounted) return;
+
+            const modalEl = document.getElementById('hseq-modal-content');
+            await autoScrollModalContent(modalEl);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setHseqModalRef.current) setHseqModalRef.current(null);
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 700));
             if (!isMounted) return;
           }
         }
@@ -271,13 +329,17 @@ export function useFakeMouseAutoPlay({
               setConvenioModalRef.current(convItem);
             }
 
-            // Esperar 4.2 segundos para lectura del convenio
-            await new Promise(r => setTimeout(r, 4200));
+            // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
+            await new Promise(r => setTimeout(r, 450));
+            if (!isMounted) return;
+
+            const modalEl = document.getElementById('convenio-modal-content');
+            await autoScrollModalContent(modalEl);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setConvenioModalRef.current) setConvenioModalRef.current(null);
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 700));
             if (!isMounted) return;
           }
         }

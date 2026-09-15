@@ -151,12 +151,12 @@ export default function CarteleraPage({
     setSelectedConvenio(null);
   }, [currentStep, transitioningToStep]);
 
-  // 2. Watchdog de seguridad: ningún modal debe quedar abierto permanentemente en modo rotativo o TV
+  // 2. Watchdog de seguridad amplio (14s) para evitar que un modal quede congelado
   useEffect(() => {
     if (!selectedConvenio || isEditorOpen) return;
     const timer = setTimeout(() => {
       setSelectedConvenio(null);
-    }, 5500);
+    }, 14000);
     return () => clearTimeout(timer);
   }, [selectedConvenio, isEditorOpen]);
 
@@ -164,7 +164,7 @@ export default function CarteleraPage({
     if (!selectedHr || isEditorOpen) return;
     const timer = setTimeout(() => {
       setSelectedHr(null);
-    }, 5500);
+    }, 14000);
     return () => clearTimeout(timer);
   }, [selectedHr, isEditorOpen]);
 
@@ -172,9 +172,49 @@ export default function CarteleraPage({
     if (!selectedHseq || isEditorOpen) return;
     const timer = setTimeout(() => {
       setSelectedHseq(null);
-    }, 5500);
+    }, 14000);
     return () => clearTimeout(timer);
   }, [selectedHseq, isEditorOpen]);
+
+  // 3. Auto-scroll suave del contenido de los modales para visualizar la imagen completa
+  useEffect(() => {
+    if (!selectedHr && !selectedHseq && !selectedConvenio) return;
+
+    let tween;
+    const timer = setTimeout(() => {
+      const activeModal = document.getElementById('hr-modal-content') ||
+                          document.getElementById('hseq-modal-content') ||
+                          document.getElementById('convenio-modal-content');
+      if (activeModal) {
+        activeModal.scrollTop = 0;
+        const triggerScroll = () => {
+          const maxScroll = activeModal.scrollHeight - activeModal.clientHeight;
+          if (maxScroll > 15) {
+            const scrollDuration = Math.min(8.5, Math.max(3.0, maxScroll / 65));
+            tween = gsap.to(activeModal, {
+              scrollTop: maxScroll,
+              duration: scrollDuration,
+              delay: 1.2,
+              ease: 'power1.inOut'
+            });
+          }
+        };
+
+        const img = activeModal.querySelector('img');
+        if (img && !img.complete) {
+          img.onload = () => setTimeout(triggerScroll, 100);
+          setTimeout(triggerScroll, 600);
+        } else {
+          setTimeout(triggerScroll, 200);
+        }
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      if (tween) tween.kill();
+    };
+  }, [selectedHr, selectedHseq, selectedConvenio]);
 
   useGSAP(() => {
     if (currentStep === 1 && hrGridRef.current) {

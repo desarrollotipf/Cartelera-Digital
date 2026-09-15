@@ -4,7 +4,6 @@ import { Shield, Tv, Palette, Zap, ExternalLink, Sparkles } from 'lucide-react';
 import { useCarteleraData } from '../hooks/useCarteleraData';
 import CanvaEditorStudio from '../components/CanvaEditorStudio';
 import CarteleraPage from './CarteleraPage';
-import LiveClock from '../components/LiveClock';
 
 export default function HseqPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -125,20 +124,6 @@ export default function HseqPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', zIndex: 1 }}>
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
-            padding: '0.85rem 1.5rem',
-            textAlign: 'right',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#f8fafc', fontFamily: 'monospace' }}>
-              <LiveClock />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* LAS 2 OPCIONES MONUMENTALES EN GRANDE */}

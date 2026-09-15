@@ -349,27 +349,27 @@
   "videos": [
     {
       "id": "v_1785860280612",
-      "url": "http://localhost:5000/uploads/1785860280538-446108370.mp4",
+      "url": "/uploads/1785860280538-446108370.mp4",
       "name": "Download (4).mp4"
     },
     {
       "id": "v_1785860274142",
-      "url": "http://localhost:5000/uploads/1785860274073-271007300.mp4",
+      "url": "/uploads/1785860274073-271007300.mp4",
       "name": "Llega el fin de semana y nada mejor que disfrutar de unas listas BBQ o Parrilla 😋😎😃Pídelas a.mp4"
     },
     {
       "id": "v_1785860268462",
-      "url": "http://localhost:5000/uploads/1785860268343-42066838.mp4",
+      "url": "/uploads/1785860268343-42066838.mp4",
       "name": "¡Descubre el poder del pollo para levantar el ánimo! 🍗💫 ¡En nuestro video reel te mostramos có.mp4"
     },
     {
       "id": "v_1785860254409",
-      "url": "http://localhost:5000/uploads/1785860254360-309048548.mp4",
+      "url": "/uploads/1785860254360-309048548.mp4",
       "name": "Pollo entero Pollo Fiesta para mil preparaciones, encuéntralo en nuestros puntos de venta 🥳🍗😎.mp4"
     },
     {
       "id": "v_1785860230428",
-      "url": "http://localhost:5000/uploads/1785860230391-135480237.mp4",
+      "url": "/uploads/1785860230391-135480237.mp4",
       "name": "🎥🍗 Descubre todo lo que Pollo Fiesta tiene para ti 🍗🎥En cada momento, hay un producto perfec.mp4"
     }
   ],

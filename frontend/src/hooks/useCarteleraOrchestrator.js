@@ -114,7 +114,6 @@ export function useCarteleraOrchestrator(
   useEffect(() => {
     if (currentStep === 5) {
       videosPlayedThisCycle.current = 0;
-      setVideoIndex(0); // Arrancar desde el primer video al entrar
     }
   }, [currentStep]);
 
@@ -261,9 +260,9 @@ export function useCarteleraOrchestrator(
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
-      // La rotación en videos se orquesta a través del evento de finalización al terminar los videos del ciclo
-      // Safety watchdog de 90s por si un reproductor externo queda inactivo o sin conexión
-      const videoWatchdog = 90000;
+      // La rotación en videos se orquesta a través del evento de finalización al terminar los videos del ciclo (mínimo todos si < 3, máx 3)
+      // Safety watchdog de 180s (3 min) por si los reproductores quedan inactivos o sin conexión
+      const videoWatchdog = 180000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(5));
       }, videoWatchdog);

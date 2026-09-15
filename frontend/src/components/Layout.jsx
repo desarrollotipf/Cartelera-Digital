@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Tv, Shield, LogOut } from 'lucide-react';
 import { usePortalAuth } from '../hooks/usePortalAuth';
 import { isHseqScope, isAdminScope } from '../utils/authUtils';
-import LiveClock from './LiveClock';
 
 export default function Layout({ title, onLogout }) {
   const location = useLocation();
@@ -97,19 +96,6 @@ export default function Layout({ title, onLogout }) {
               </Link>
             </div>
           )}
-
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '10px',
-            padding: '0.45rem 1rem',
-            fontSize: '0.95rem',
-            fontWeight: 800,
-            color: '#334155',
-            fontFamily: 'monospace'
-          }}>
-            <LiveClock />
-          </div>
 
           {onLogout && (
             <button
