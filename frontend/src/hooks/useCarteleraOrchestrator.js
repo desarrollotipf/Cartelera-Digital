@@ -154,7 +154,7 @@ export function useCarteleraOrchestrator(
       return true;
     }
     if (step === 5) { // Sobre Nosotros / Videos
-      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !v.url.includes('tiktok.com'));
+      const vids = (data?.videos || []).filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools'));
       return vids.length > 0;
     }
     if (step === 6) { // Convenios Compensar

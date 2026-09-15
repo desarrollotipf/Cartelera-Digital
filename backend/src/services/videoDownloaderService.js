@@ -38,10 +38,11 @@ async function processAndDownloadVideo(rawUrl) {
       });
 
       if (res.data && res.data.code === 0 && res.data.data?.play) {
-        const directPlayUrl = res.data.data.hdplay || res.data.data.play;
+        const rawPlayUrl = res.data.data.hdplay || res.data.data.play;
+        const directPlayUrl = rawPlayUrl.startsWith('http') ? rawPlayUrl : `https://www.tikwm.com${rawPlayUrl}`;
         const title = res.data.data.title || 'TikTok Corporativo';
         
-        console.log(' [VideoDownloader] Descargando stream directo de TikTok...');
+        console.log(' [VideoDownloader] Descargando stream directo de TikTok:', directPlayUrl);
         const streamRes = await axios({
           url: directPlayUrl,
           method: 'GET',

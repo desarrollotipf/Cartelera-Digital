@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Video } from 'lucide-react';
 
@@ -29,12 +29,14 @@ const VideosModule = ({
   isTVMode,
   openEditor
 }) => {
-  // Registro de URLs de videos con fallos, bloqueos o errores de embed para excluirlos automáticamente
-  const [failedUrls, setFailedUrls] = React.useState(new Set());
-  const [currentVideoDuration, setCurrentVideoDuration] = React.useState(null);
+  // Registro de URLs de videos con fallos para excluirlos automáticamente
+  const [failedUrls, setFailedUrls] = useState(new Set());
+  const [currentVideoDuration, setCurrentVideoDuration] = useState(null);
+  const [tiktokStreams, setTiktokStreams] = useState({});
+  const lastEndedTimeRef = useRef(0);
 
-  // Lista de videos limpios y 100% funcionales (normalizando URLs de uploads para evitar fallos de conexión)
-  const validVideos = React.useMemo(() => {
+  // Lista de videos limpios y funcionales
+  const validVideos = useMemo(() => {
     return (data?.videos || [])
       .map(v => ({
         ...v,
@@ -43,8 +45,16 @@ const VideosModule = ({
       .filter(v => v?.url && !v.url.includes('mov_bbb.mp4') && !v.url.includes('w3schools') && !failedUrls.has(v.url.trim()));
   }, [data?.videos, failedUrls]);
 
-  const handleVideoEnded = React.useCallback(() => {
-    // Si el editor está abierto o en modo vista previa, rotar solo dentro de videos sin salir
+  const handleVideoEnded = useCallback(() => {
+    // 1. Debounce guard: impedir ejecuciones duplicadas dentro de 2.5s (evita doble conteo por eventos superpuestos)
+    const now = Date.now();
+    if (now - lastEndedTimeRef.current < 2500) {
+      console.log('[VideosModule] Invocación handleVideoEnded ignorada por debounce');
+      return;
+    }
+    lastEndedTimeRef.current = now;
+
+    // Si el editor está abierto o en modo vista previa, rotar solo dentro de videos sin salir del módulo
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       if (validVideos.length > 1) {
         setIsDeckTransitioning(true);
@@ -53,18 +63,19 @@ const VideosModule = ({
       }
       return;
     }
-    
+
     if (validVideos.length === 0) {
       goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
       return;
     }
-    
+
     videosPlayedThisCycle.current += 1;
     const nextIndex = (videoIndex + 1) % validVideos.length;
 
     // Regla estricta:
-    // Mínimo todos los que hayan si hay < 3 (ej. 1 o 2), máximo 3 videos por ciclo
+    // Mínimo todos los que hayan si hay < 3 (ej. 1 o 2), exactamente 3 videos por ciclo si hay 3 o más
     const maxVideosThisCycle = Math.max(1, Math.min(validVideos.length, 3));
+    console.log(`[VideosModule] Video finalizado con éxito. Progreso del ciclo: ${videosPlayedThisCycle.current}/${maxVideosThisCycle}`);
 
     if (videosPlayedThisCycle.current < maxVideosThisCycle && validVideos.length > 1) {
       // Si aún faltan videos por reproducir en este ciclo (ej: video 2 o 3), avanzar al siguiente video
@@ -73,6 +84,7 @@ const VideosModule = ({
       setVideoIndex(nextIndex);
     } else {
       // Cuando se completa la cuota de videos del ciclo (los 3 videos o todos los existentes), avanzar de módulo
+      console.log(`[VideosModule] Cuota de ${maxVideosThisCycle} videos alcanzada en este ciclo. Pasando al siguiente módulo...`);
       videosPlayedThisCycle.current = 0;
       setCurrentVideoDuration(null);
       setVideoIndex(nextIndex);
@@ -80,68 +92,119 @@ const VideosModule = ({
     }
   }, [validVideos, isEditorOpen, isLivePreview, overrideStep, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
 
-  // Watchdog de seguridad dinámico: si el video tiene duración conocida (HTML5 video), dar la duración completa + 15s.
-  // Si es un iframe (YouTube / Vimeo / TikTok) o no reporta duración, dar 240 segundos (4 minutos) para permitir reproducción íntegra.
+  // Función para descartar videos que fallen SIN consumir cuota de videos reproducidos
+  const markVideoAsFailed = useCallback((url) => {
+    if (!url) return;
+    console.warn('[VideosModule] Video no reproducible, omitiendo sin consumir cuota del ciclo:', url);
+    setFailedUrls(prev => {
+      const next = new Set(prev);
+      next.add(url.trim());
+      return next;
+    });
+
+    // Pasar de inmediato al siguiente video sin incrementar videosPlayedThisCycle
+    if (validVideos.length > 1) {
+      setCurrentVideoDuration(null);
+      setIsDeckTransitioning(true);
+      setVideoIndex(prev => (prev + 1) % validVideos.length);
+    } else {
+      goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
+    }
+  }, [validVideos, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
+
+  // Pre-resolución de stream MP4 para enlaces de TikTok
+  useEffect(() => {
+    if (validVideos.length === 0) return;
+    const activeIdx = (videoIndex % validVideos.length);
+    const activeVid = validVideos[activeIdx];
+    if (!activeVid?.url) return;
+
+    const safeUrl = activeVid.url;
+    if (!safeUrl.includes('tiktok.com')) return;
+
+    const match = safeUrl.match(/\/video\/(\d+)/) || safeUrl.match(/\/embed\/(?:v2\/)?(\d+)/) || safeUrl.match(/\/v\/(\d+)/);
+    const tiktokId = match ? match[1] : '';
+    if (!tiktokId || tiktokStreams[tiktokId]) return;
+
+    let isMounted = true;
+    fetch('https://www.tikwm.com/api/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ url: safeUrl, web: '1', hd: '1' })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return;
+        if (data?.code === 0 && data?.data?.play) {
+          const rawPlay = data.data.hdplay || data.data.play;
+          const playUrl = rawPlay.startsWith('http') ? rawPlay : `https://www.tikwm.com${rawPlay}`;
+          setTiktokStreams(prev => ({
+            ...prev,
+            [tiktokId]: { url: playUrl, duration: data.data.duration || 15 }
+          }));
+          if (data.data.duration) {
+            setCurrentVideoDuration(data.data.duration);
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('[VideosModule] Fallback a iframe de TikTok:', err.message);
+      });
+
+    return () => { isMounted = false; };
+  }, [videoIndex, validVideos, tiktokStreams]);
+
+  // Watchdog de seguridad dinámico calibrado
   useEffect(() => {
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined) || !isTVMode) return;
     if (validVideos.length === 0) return;
 
-    const timeoutMs = currentVideoDuration && currentVideoDuration > 0
-      ? Math.max(120000, Math.ceil(currentVideoDuration + 15) * 1000)
-      : 240000;
+    const activeIdx = videoIndex % validVideos.length;
+    const activeVid = validVideos[activeIdx];
+    const isTikTok = activeVid?.url?.includes('tiktok.com');
+
+    // Duración máxima de espera:
+    // - Si la duración es conocida (video HTML5 o reporte de API), dar duración + 12s
+    // - Si es TikTok en iframe sin duración resuelta, dar 25s (duración promedio de un reel)
+    // - Si es YouTube / Vimeo sin reporte, dar 90s (tiempo óptimo para video institucional)
+    let timeoutMs = 90000;
+    if (currentVideoDuration && currentVideoDuration > 0) {
+      timeoutMs = Math.max(15000, Math.ceil(currentVideoDuration + 12) * 1000);
+    } else if (isTikTok) {
+      timeoutMs = 25000;
+    }
 
     const timer = setTimeout(() => {
-      console.log(`[VideosModule] Watchdog dinámico de video ejecutado (${Math.round(timeoutMs / 1000)}s), avanzando al siguiente video...`);
+      console.log(`[VideosModule] Watchdog de video activado (${Math.round(timeoutMs / 1000)}s), avanzando al siguiente video...`);
       handleVideoEnded();
     }, timeoutMs);
 
     return () => clearTimeout(timer);
   }, [videoIndex, currentVideoDuration, validVideos.length, isEditorOpen, isLivePreview, overrideStep, isTVMode, handleVideoEnded]);
 
-  // Función para descartar de inmediato videos caídos o bloqueados
-  const markVideoAsFailed = React.useCallback((url) => {
-    if (!url) return;
-    console.warn('[VideosModule] Video con error o bloqueo detectado, descartando:', url);
-    setFailedUrls(prev => {
-      const next = new Set(prev);
-      next.add(url.trim());
-      return next;
-    });
-    // Avanzar inmediatamente al siguiente video válido
-    handleVideoEnded();
-  }, [handleVideoEnded]);
-
-  // Escuchar cuando el video de YouTube o Vimeo termina o falla mediante postMessage
+  // Escuchar eventos de YouTube y Vimeo vía postMessage
   useEffect(() => {
     const handleMessage = (e) => {
       try {
         const raw = e.data;
         if (!raw) return;
 
-        // Detección directa por texto crudo
+        let msg = raw;
         if (typeof raw === 'string') {
-          // Errores de YouTube o bloqueo de servidor
-          if (raw.includes('"event":"onError"') || raw.includes('"error"') || raw.includes('overload-protect')) {
+          // Errores o bloqueos
+          if (raw.includes('"event":"onError"') || raw.includes('overload-protect')) {
             const activeVid = validVideos[videoIndex % Math.max(validVideos.length, 1)];
             if (activeVid?.url) markVideoAsFailed(activeVid.url);
             return;
           }
 
-          if (raw.includes('"playerState":0') || raw.includes('"info":0') || (raw.includes('onStateChange') && raw.includes(':0'))) {
-            handleVideoEnded();
-            return;
-          }
-          if (raw.includes('"event":"finish"') || raw.includes('"event":"ended"')) {
-            handleVideoEnded();
-            return;
+          try {
+            msg = JSON.parse(raw);
+          } catch (_) {
+            msg = null;
           }
         }
-        
-        let msg = raw;
-        if (typeof raw === 'string') {
-          try { msg = JSON.parse(raw); } catch (_) {}
-        }
-        
+
         if (msg && typeof msg === 'object') {
           // YouTube Error (código 100, 101, 150 - video no disponible o no embebible)
           if (msg.event === 'onError' || msg.info === 100 || msg.info === 101 || msg.info === 150) {
@@ -150,17 +213,24 @@ const VideosModule = ({
             return;
           }
 
-          // YouTube: YT.PlayerState.ENDED (0)
+          // YouTube: YT.PlayerState.ENDED (0) o tiempo final alcanzado
           const isYTEnded = (msg.event === 'onStateChange' && msg.info === 0) ||
                             (msg.info?.playerState === 0) ||
                             (msg.event === 'infoDelivery' && msg.info?.playerState === 0) ||
-                            (msg.info?.currentTime && msg.info?.duration && (msg.info.duration - msg.info.currentTime <= 0.6));
-          
+                            (typeof msg.info?.currentTime === 'number' && typeof msg.info?.duration === 'number' && msg.info.duration > 0 && (msg.info.duration - msg.info.currentTime <= 0.8));
+
           // Vimeo: event === 'finish' o 'ended'
           const isVimeoEnded = msg.event === 'finish' || msg.event === 'ended';
 
           if (isYTEnded || isVimeoEnded) {
+            console.log('[VideosModule] Evento ENDED recibido vía postMessage');
             handleVideoEnded();
+            return;
+          }
+
+          // Capturar duración si YouTube la reporta
+          if (typeof msg.info?.duration === 'number' && msg.info.duration > 0) {
+            setCurrentVideoDuration(msg.info.duration);
           }
         }
       } catch (err) {
@@ -172,28 +242,13 @@ const VideosModule = ({
     return () => window.removeEventListener('message', handleMessage);
   }, [handleVideoEnded, markVideoAsFailed, validVideos, videoIndex]);
 
+  // Si no hay videos válidos en modo TV, saltar al siguiente paso
   useEffect(() => {
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) return;
-    if (validVideos.length === 0) {
-      if (isTVMode) {
-        goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
-      }
-      return;
+    if (validVideos.length === 0 && isTVMode) {
+      goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }
-    
-    const activeIdx = (videoIndex % validVideos.length);
-    const activeVid = validVideos[activeIdx];
-    
-    if (!activeVid?.url) {
-      handleVideoEnded();
-      return;
-    } else if (activeVid.url.includes('tiktok.com') && !activeVid.url.startsWith('/uploads')) {
-      // Las URLs directas de TikTok son bloqueadas por TikTok ('overload-protect'). Descartar de inmediato para no congelar la pantalla.
-      console.warn('[VideosModule] Descartando embed crudo de TikTok bloqueado:', activeVid.url);
-      markVideoAsFailed(activeVid.url);
-      return;
-    }
-  }, [videoIndex, validVideos, isEditorOpen, isTVMode, handleVideoEnded, markVideoAsFailed, goToStep]);
+  }, [validVideos.length, isEditorOpen, isTVMode, overrideStep, isLivePreview, goToStep, getNextAvailableStep]);
 
   return (
     <motion.div
@@ -218,21 +273,16 @@ const VideosModule = ({
               );
             }
             const orbitalDeck = rawVideos;
-
             const activeIdx = (videoIndex % rawVideos.length);
 
             return orbitalDeck.map((vid, idx) => {
-              // Calcular distancia al video activo en el anillo orbital
               let offset = idx - activeIdx;
               if (offset > orbitalDeck.length / 2) offset -= orbitalDeck.length;
               if (offset < -orbitalDeck.length / 2) offset += orbitalDeck.length;
 
-              // Si la cantidad de tarjetas es par, ocultar la que queda exactamente opuesta para mantener simetría
               const isSymmetricHidden = (orbitalDeck.length % 2 === 0 && Math.abs(offset) === orbitalDeck.length / 2);
-
               const isSelected = (offset === 0 && !vid.isPromo);
 
-              // --- ARQUITECTURA MULTIPLATAFORMA & ORIENTACIÓN ---
               let safeUrl = (vid.url || '').trim();
               let isYouTube = false;
               let youtubeId = '';
@@ -241,7 +291,7 @@ const VideosModule = ({
               let vimeoId = '';
               let isTikTok = false;
               let tiktokId = '';
-              
+
               if (safeUrl.includes('youtube.com') || safeUrl.includes('youtu.be')) {
                 isYouTube = true;
                 isShort = safeUrl.includes('/shorts/');
@@ -271,10 +321,7 @@ const VideosModule = ({
               }
 
               const vidId = vid.id || idx;
-              
-              // Detección automática de orientación:
-              // - Si es TikTok, YouTube Short o marcado portrait: 9:16 (TikTok Vertical)
-              // - Si es YouTube normal, Vimeo o video horizontal: 16:9 (Landscape)
+
               let isLandscape = true;
               if (isTikTok || isShort || vid.orientation === 'portrait' || videoOrientations[vidId] === 'portrait') {
                 isLandscape = false;
@@ -282,7 +329,6 @@ const VideosModule = ({
                 isLandscape = true;
               }
 
-              // Cálculo trigonométrico orbital en abanico
               const angle = isSymmetricHidden ? 0 : offset * 15;
               const translateX = isSymmetricHidden ? 0 : offset * (isLandscape ? 290 : 255);
               const translateY = isSymmetricHidden ? 50 : Math.abs(offset) * 25;
@@ -311,7 +357,7 @@ const VideosModule = ({
                   {safeUrl && !vid.isPromo && isSelected ? (
                     <div className="cinema-ambilight-container" style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', background: '#000', borderRadius: '16px' }}>
                       {isYouTube && youtubeId ? (
-                        /* OPCIÓN B1: YouTube Iframe Oficial con API js y origin */
+                        /* OPCIÓN B1: YouTube Iframe Oficial con API js */
                         <iframe
                           key={`yt-active-${vidId}-${activeIdx}`}
                           src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}`}
@@ -351,8 +397,51 @@ const VideosModule = ({
                           allowFullScreen
                           style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
                         />
+                      ) : isTikTok && tiktokStreams[tiktokId]?.url ? (
+                        /* OPCIÓN B3a: TikTok Stream MP4 Directo con reproducción nativa fluida */
+                        <video
+                          key={`tiktok-stream-active-${vidId}-${activeIdx}-${tiktokStreams[tiktokId].url}`}
+                          src={tiktokStreams[tiktokId].url}
+                          autoPlay
+                          muted
+                          playsInline
+                          controls
+                          ref={(el) => {
+                            if (el) {
+                              el.currentTime = 0;
+                              el.muted = true;
+                              el.play().catch(() => {});
+                            }
+                          }}
+                          onLoadedMetadata={(e) => {
+                            const dur = e.target.duration;
+                            if (dur && !isNaN(dur) && isFinite(dur) && dur > 0) {
+                              setCurrentVideoDuration(dur);
+                            }
+                            if (setVideoOrientations) {
+                              setVideoOrientations(prev => ({ ...prev, [vidId]: 'portrait' }));
+                            }
+                            e.target.currentTime = 0;
+                            e.target.muted = true;
+                            e.target.play().catch(() => {});
+                          }}
+                          onEnded={handleVideoEnded}
+                          onError={() => {
+                            setTiktokStreams(prev => {
+                              const copy = { ...prev };
+                              delete copy[tiktokId];
+                              return copy;
+                            });
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block'
+                          }}
+                        />
                       ) : isTikTok && tiktokId ? (
-                        /* OPCIÓN B3: TikTok Embed Directo (Sin Zoom) */
+                        /* OPCIÓN B3b: TikTok Embed Iframe Directo */
                         <iframe
                           key={`tiktok-active-${vidId}-${activeIdx}`}
                           src={`https://www.tiktok.com/embed/v2/${tiktokId}?lang=es-ES`}

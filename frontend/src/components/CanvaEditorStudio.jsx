@@ -152,16 +152,29 @@ export default function CanvaEditorStudio({
       setIsUploading(false);
     }
 
-    if (url.includes('tiktok.com')) {
-      alert('TikTok ha bloqueado la inserción web de este video ("overload-protect"). Para reproducirlo en la cartelera sin restricciones, sube el archivo de video (.mp4 / .mov) directamente usando el botón "Subir Archivo".');
-      return;
-    }
-
-    // Fallback para YouTube o Vimeo
+    // Enlaces web (TikTok, YouTube, Shorts, Vimeo)
     let name = "Video Enlace Web";
-    if (url.includes('youtube.com') || url.includes('youtu.be')) name = "Video YouTube";
-    if (url.includes('vimeo.com')) name = "Video Vimeo";
-    setForm(prev => ({ ...prev, videos: [{ id: 'v_' + Date.now(), url: url.trim(), name }, ...(prev.videos || [])] }));
+    let orientation = 'landscape';
+    if (url.includes('tiktok.com')) {
+      name = "Video TikTok";
+      orientation = 'portrait';
+    } else if (url.includes('/shorts/')) {
+      name = "YouTube Short";
+      orientation = 'portrait';
+    } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      name = "Video YouTube";
+    } else if (url.includes('vimeo.com')) {
+      name = "Video Vimeo";
+    }
+    setForm(prev => ({
+      ...prev,
+      videos: [{
+        id: 'v_' + Date.now(),
+        url: url.trim(),
+        name,
+        orientation
+      }, ...(prev.videos || [])]
+    }));
   };
 
   const [isSaving, setIsSaving] = useState(false);
