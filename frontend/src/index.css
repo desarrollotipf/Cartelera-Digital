@@ -888,7 +888,7 @@ body {
 .ticker-text {
   display: inline-block;
   white-space: nowrap;
-  animation: marquee 28s linear infinite;
+  animation: marquee var(--marquee-speed, 14s) linear infinite;
   font-size: 0.86rem;
   font-weight: 500;
   color: var(--text-secondary);

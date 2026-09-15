@@ -405,6 +405,7 @@ export default function CarteleraPage({
         appTitle={appTitle}
         appSubtitle={appSubtitle}
         marquesina={marquesina}
+        marqueeSpeed={data?.topBar?.marqueeSpeed || 14}
         isTVMode={isTVMode}
         isLivePreview={isLivePreview}
         selectedElementId={selectedElementId}

@@ -8,6 +8,7 @@ export default function CarteleraTopbar({
   appTitle,
   appSubtitle,
   marquesina,
+  marqueeSpeed = 14,
   isTVMode,
   isLivePreview,
   selectedElementId,
@@ -56,7 +57,7 @@ export default function CarteleraTopbar({
         <div className="ticker-wrap" style={{ flex: 1 }}>
           <span className="ticker-badge-label">COMUNICADO</span>
           <div className="ticker-container">
-            <div className="ticker-text">{marquesina}</div>
+            <div className="ticker-text" style={{ animationDuration: `${marqueeSpeed || 14}s` }}>{marquesina}</div>
           </div>
         </div>
       </CanvaElementWrapper>

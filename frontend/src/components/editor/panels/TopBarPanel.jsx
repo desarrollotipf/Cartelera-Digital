@@ -18,8 +18,20 @@ export default function TopBarPanel({ form, setForm, updateTitle, selectedElemen
       >
         <label className="canva-form-label">Cinta de Comunicados (Marquesina)</label>
         <input className="canva-input" style={{ marginBottom: '0.8rem' }} value={form.topBar?.marquesina || ''} onChange={(e) => setForm({ ...form, topBar: { ...form.topBar, marquesina: e.target.value } })} placeholder="Ej: Bienvenidos a la planta..." />
-        <label className="canva-form-label">Velocidad de Rotación General de Pantallas (Segundos)</label>
-        <input className="canva-input" type="number" min="5" max="60" value={form.topBar?.rotationSpeed !== undefined ? form.topBar.rotationSpeed : 10} onChange={(e) => setForm({ ...form, topBar: { ...form.topBar, rotationSpeed: e.target.value === '' ? '' : Number(e.target.value) } })} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div>
+            <label className="canva-form-label">Velocidad Comunicado (s)</label>
+            <input className="canva-input" type="number" min="5" max="40" value={form.topBar?.marqueeSpeed !== undefined ? form.topBar.marqueeSpeed : 14} onChange={(e) => {
+              const val = e.target.value === '' ? '' : Number(e.target.value);
+              setForm({ ...form, topBar: { ...form.topBar, marqueeSpeed: val } });
+              if (val) document.documentElement.style.setProperty('--marquee-speed', `${val}s`);
+            }} />
+          </div>
+          <div>
+            <label className="canva-form-label">Rotación Pantallas (s)</label>
+            <input className="canva-input" type="number" min="5" max="60" value={form.topBar?.rotationSpeed !== undefined ? form.topBar.rotationSpeed : 10} onChange={(e) => setForm({ ...form, topBar: { ...form.topBar, rotationSpeed: e.target.value === '' ? '' : Number(e.target.value) } })} />
+          </div>
+        </div>
       </div>
 
       <div className="canva-form-card" style={{ background: 'rgba(11, 66, 116, 0.15)', borderColor: '#0b4274' }}>
