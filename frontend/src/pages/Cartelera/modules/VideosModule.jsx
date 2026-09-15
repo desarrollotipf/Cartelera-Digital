@@ -31,6 +31,7 @@ const VideosModule = ({
 }) => {
   // Registro de URLs de videos con fallos, bloqueos o errores de embed para excluirlos automáticamente
   const [failedUrls, setFailedUrls] = React.useState(new Set());
+  const [currentVideoDuration, setCurrentVideoDuration] = React.useState(null);
 
   // Lista de videos limpios y 100% funcionales (normalizando URLs de uploads para evitar fallos de conexión)
   const validVideos = React.useMemo(() => {
@@ -47,6 +48,7 @@ const VideosModule = ({
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       if (validVideos.length > 1) {
         setIsDeckTransitioning(true);
+        setCurrentVideoDuration(null);
         setVideoIndex(prev => (prev + 1) % validVideos.length);
       }
       return;
@@ -60,34 +62,41 @@ const VideosModule = ({
     videosPlayedThisCycle.current += 1;
     const nextIndex = (videoIndex + 1) % validVideos.length;
 
-    // Regla estricta acordada:
+    // Regla estricta:
     // Mínimo todos los que hayan si hay < 3 (ej. 1 o 2), máximo 3 videos por ciclo
     const maxVideosThisCycle = Math.max(1, Math.min(validVideos.length, 3));
 
     if (videosPlayedThisCycle.current < maxVideosThisCycle && validVideos.length > 1) {
       // Si aún faltan videos por reproducir en este ciclo (ej: video 2 o 3), avanzar al siguiente video
+      setCurrentVideoDuration(null);
       setIsDeckTransitioning(true);
       setVideoIndex(nextIndex);
     } else {
-      // Cuando se completa la cuota de videos del ciclo, avanzar de módulo en la cartelera
+      // Cuando se completa la cuota de videos del ciclo (los 3 videos o todos los existentes), avanzar de módulo
       videosPlayedThisCycle.current = 0;
+      setCurrentVideoDuration(null);
       setVideoIndex(nextIndex);
       goToStep(getNextAvailableStep ? getNextAvailableStep(5) : 6);
     }
   }, [validVideos, isEditorOpen, isLivePreview, overrideStep, videoIndex, videosPlayedThisCycle, setVideoIndex, setIsDeckTransitioning, goToStep, getNextAvailableStep]);
 
-  // Watchdog individual de seguridad (60s) para asegurar que el video en curso avance si no emite evento ended
+  // Watchdog de seguridad dinámico: si el video tiene duración conocida (HTML5 video), dar la duración completa + 15s.
+  // Si es un iframe (YouTube / Vimeo / TikTok) o no reporta duración, dar 240 segundos (4 minutos) para permitir reproducción íntegra.
   useEffect(() => {
     if (isEditorOpen || isLivePreview || (overrideStep !== null && overrideStep !== undefined) || !isTVMode) return;
     if (validVideos.length === 0) return;
 
+    const timeoutMs = currentVideoDuration && currentVideoDuration > 0
+      ? Math.max(120000, Math.ceil(currentVideoDuration + 15) * 1000)
+      : 240000;
+
     const timer = setTimeout(() => {
-      console.log('[VideosModule] Watchdog individual de video activado (60s), avanzando...');
+      console.log(`[VideosModule] Watchdog dinámico de video ejecutado (${Math.round(timeoutMs / 1000)}s), avanzando al siguiente video...`);
       handleVideoEnded();
-    }, 60000);
+    }, timeoutMs);
 
     return () => clearTimeout(timer);
-  }, [videoIndex, validVideos.length, isEditorOpen, isLivePreview, overrideStep, isTVMode, handleVideoEnded]);
+  }, [videoIndex, currentVideoDuration, validVideos.length, isEditorOpen, isLivePreview, overrideStep, isTVMode, handleVideoEnded]);
 
   // Función para descartar de inmediato videos caídos o bloqueados
   const markVideoAsFailed = React.useCallback((url) => {
@@ -375,6 +384,10 @@ const VideosModule = ({
                             }
                           }}
                           onLoadedMetadata={(e) => {
+                            const dur = e.target.duration;
+                            if (dur && !isNaN(dur) && isFinite(dur) && dur > 0) {
+                              setCurrentVideoDuration(dur);
+                            }
                             const isWide = e.target.videoWidth >= e.target.videoHeight;
                             if (setVideoOrientations) {
                               setVideoOrientations(prev => ({ ...prev, [vidId]: isWide ? 'landscape' : 'portrait' }));

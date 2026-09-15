@@ -101,6 +101,8 @@ export default function CarteleraPage({
     isLivePreview,
     overrideStep,
     goToStep,
+    getNextAvailableStep,
+    rotationSpeed: data?.topBar?.rotationSpeed || 12,
     hseqItems: data?.hseq || [],
     hrItems: data?.hrModule || [],
     convenioItems: data?.convenios || [],

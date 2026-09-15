@@ -219,11 +219,13 @@ export function useCarteleraOrchestrator(
       }
 
     } else if (currentStep === 1) { // PASO 1: AVISOS GESTIÓN HUMANA
-      const hrCount = data?.hrModule?.length || 0;
-      const hrDuration = Math.max(16000, (hrCount * 6800) + 3000);
+      // El tiempo es independiente: la rotación se orquesta a través del autoplay del cursor
+      // completando la visualización de todas las tarjetas con sus modales de forma ágil y secuencial.
+      // Safety watchdog amplio (5 minutos) en caso de contingencia.
+      const hrWatchdog = 300000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(1));
-      }, hrDuration);
+      }, hrWatchdog);
 
     } else if (currentStep === 2) { // PASO 2: CUMPLEAÑOS (ESCALERA DINÁMICA)
       const bdayCount = birthdays?.length || 0;
@@ -240,11 +242,13 @@ export function useCarteleraOrchestrator(
       }, bdayDuration);
 
     } else if (currentStep === 3) { // PASO 3: NORMAS HSEQ
-      const hseqCount = data?.hseq?.length || 0;
-      const hseqDuration = Math.max(16000, (hseqCount * 6800) + 3000);
+      // El tiempo es independiente: la rotación se orquesta a través del autoplay del cursor
+      // visualizando todas las tarjetas y modales HSEQ hasta la última.
+      // Safety watchdog amplio (5 minutos).
+      const hseqWatchdog = 300000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(3));
-      }, hseqDuration);
+      }, hseqWatchdog);
 
     } else if (currentStep === 4) { // PASO 4: CLIMA Y NOTICIAS
       const newsTimer = setTimeout(() => {
@@ -260,21 +264,21 @@ export function useCarteleraOrchestrator(
       }, rotationMs);
 
     } else if (currentStep === 5) { // PASO 5: SOBRE NOSOTROS / VIDEOS CORPORATIVOS
-      // La rotación en videos se orquesta a través del evento de finalización al terminar los videos del ciclo (mínimo todos si < 3, máx 3)
-      // Safety watchdog de 180s (3 min) por si los reproductores quedan inactivos o sin conexión
-      const videoWatchdog = 180000;
+      // La rotación en videos se orquesta a través del evento de finalización al terminar los 3 videos del ciclo
+      // (o todos los disponibles si son 1 o 2). Safety watchdog de 10 minutos (600s) para permitir reproducción completa.
+      const videoWatchdog = 600000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(5));
       }, videoWatchdog);
 
     } else if (currentStep === 6) { // PASO 6: CONVENIOS COMPENSAR
-      const convenios = data?.convenios || [];
-      const conveniosDuration = convenios.length > 0 
-        ? Math.max(16000, (convenios.length * 6800) + 3000) 
-        : rotationMs;
+      // El tiempo es independiente: la rotación se orquesta a través del autoplay del cursor
+      // visualizando todas las tarjetas y modales de convenios hasta la última.
+      // Safety watchdog amplio (5 minutos).
+      const conveniosWatchdog = 300000;
       timeoutId = setTimeout(() => {
         goToStep(getNextAvailableStep(6));
-      }, conveniosDuration);
+      }, conveniosWatchdog);
     }
 
     return () => {

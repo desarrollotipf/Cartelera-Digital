@@ -3,12 +3,12 @@ import { gsap } from 'gsap';
 
 /**
  * Función para desplazar automáticamente el contenido del modal de arriba a abajo
- * a una velocidad constante y esperar hasta que la imagen o contenido se visualice por completo.
+ * a una velocidad ágil y constante y esperar hasta que la imagen o contenido se visualice por completo.
  */
-function autoScrollModalContent(modalEl) {
+function autoScrollModalContent(modalEl, speedFactor = 1.0) {
   return new Promise((resolve) => {
     if (!modalEl) {
-      setTimeout(resolve, 3200);
+      setTimeout(resolve, Math.round(2500 * speedFactor));
       return;
     }
 
@@ -19,39 +19,43 @@ function autoScrollModalContent(modalEl) {
 
       if (maxScroll <= 20) {
         // No hay scroll necesario (cabe completo en la ventana del modal). Esperar lectura y resolver.
-        setTimeout(resolve, 3800);
+        setTimeout(resolve, Math.round(2800 * speedFactor));
         return;
       }
 
-      // Velocidad suave y confortable de lectura (~65px/segundo)
-      const scrollDuration = Math.min(8.5, Math.max(3.2, maxScroll / 65));
+      // Velocidad ágil y legible (~88-105px/segundo según speedFactor)
+      const pxPerSec = Math.max(70, Math.min(130, 92 / speedFactor));
+      const scrollDuration = Math.min(7.2, Math.max(2.2, maxScroll / pxPerSec));
 
-      // 1. Pausa inicial de 1.4s para leer título y descripción superior
+      // 1. Pausa inicial para leer título y descripción superior
       setTimeout(() => {
         gsap.to(modalEl, {
           scrollTop: maxScroll,
           duration: scrollDuration,
           ease: 'power1.inOut',
           onComplete: () => {
-            // 2. Pausa al final (2.0s) una vez que la imagen o afiche se visualiza por completo
-            setTimeout(resolve, 2000);
+            // 2. Pausa al final una vez que la imagen o afiche se visualiza por completo
+            setTimeout(resolve, Math.round(1500 * speedFactor));
           }
         });
-      }, 1400);
+      }, Math.round(1000 * speedFactor));
     };
 
     const img = modalEl.querySelector('img');
     if (img && !img.complete) {
-      img.onload = () => setTimeout(executeScroll, 120);
-      setTimeout(executeScroll, 600);
+      img.onload = () => setTimeout(executeScroll, 100);
+      setTimeout(executeScroll, 450);
     } else {
-      setTimeout(executeScroll, 250);
+      setTimeout(executeScroll, 200);
     }
   });
 }
 
 /**
- * Hook para simular la interacción automática del cursor virtual en modo TV
+ * Hook para simular la interacción automática del cursor virtual en modo TV.
+ * Las páginas con navegación automática son completamente independientes del temporizador manual:
+ * completan la visualización secuencial de TODAS las tarjetas con sus modales y solo cuando
+ * termina de verse la última tarjeta y su modal es cuando se avanza al siguiente módulo.
  */
 export function useFakeMouseAutoPlay({
   currentStep,
@@ -60,6 +64,8 @@ export function useFakeMouseAutoPlay({
   isLivePreview,
   overrideStep,
   goToStep,
+  getNextAvailableStep,
+  rotationSpeed = 12,
   hseqItems = [],
   hrItems = [],
   convenioItems = [],
@@ -79,6 +85,9 @@ export function useFakeMouseAutoPlay({
   const goToStepRef = useRef(goToStep);
   goToStepRef.current = goToStep;
 
+  const getNextAvailableStepRef = useRef(getNextAvailableStep);
+  getNextAvailableStepRef.current = getNextAvailableStep;
+
   const setHrModalRef = useRef(setSelectedHr);
   setHrModalRef.current = setSelectedHr;
 
@@ -97,9 +106,12 @@ export function useFakeMouseAutoPlay({
   const conveniosRef = useRef(convenioItems);
   conveniosRef.current = convenioItems;
 
+  // Factor de velocidad suave derivado del temporizador para una navegación más ágil si se desea
+  const speedFactor = Math.max(0.65, Math.min(1.4, (rotationSpeed || 12) / 12));
+
   // 1. Autoplay para Avisos de Gestión Humana (Paso 1)
   useEffect(() => {
-    if (currentStep !== 1 || transitioningToStep !== null || !isTVMode || isLivePreview) {
+    if (currentStep !== 1 || transitioningToStep !== null || !isTVMode || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
       if (setHrModalRef.current) setHrModalRef.current(null);
       return;
@@ -110,7 +122,7 @@ export function useFakeMouseAutoPlay({
     const runHrSequence = async () => {
       try {
         // Esperar que la animación de entrada del paso 1 se complete
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, Math.round(1000 * speedFactor)));
         if (!isMounted) return;
 
         // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha (y de arriba a abajo por filas)
@@ -124,6 +136,12 @@ export function useFakeMouseAutoPlay({
 
         if (allCards.length === 0) {
           setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
+          await new Promise(r => setTimeout(r, 1200));
+          if (!isMounted) return;
+          if (goToStepRef.current) {
+            const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(1) : 2;
+            goToStepRef.current(next);
+          }
           return;
         }
 
@@ -136,14 +154,14 @@ export function useFakeMouseAutoPlay({
             const targetX = rect.left + rect.width / 2;
             const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-            // 1. Mover cursor hacia la tarjeta de izquierda a derecha
+            // 1. Mover cursor hacia la tarjeta de izquierda a derecha de forma ágil
             setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
-            await new Promise(r => setTimeout(r, 900));
+            await new Promise(r => setTimeout(r, Math.round(650 * speedFactor)));
             if (!isMounted) return;
 
             // 2. Efecto de Clic (Ripple)
             setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-            await new Promise(r => setTimeout(r, 220));
+            await new Promise(r => setTimeout(r, 180));
             if (!isMounted) return;
             setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
@@ -156,19 +174,29 @@ export function useFakeMouseAutoPlay({
             }
 
             // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (!isMounted) return;
 
             const modalEl = document.getElementById('hr-modal-content');
-            await autoScrollModalContent(modalEl);
+            await autoScrollModalContent(modalEl, speedFactor);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setHrModalRef.current) setHrModalRef.current(null);
-            await new Promise(r => setTimeout(r, 700));
+            await new Promise(r => setTimeout(r, Math.round(500 * speedFactor)));
             if (!isMounted) return;
           }
         }
+
+        // --- SOLO CUANDO TERMINA DE VERSE LA ÚLTIMA TARJETA Y SU MODAL ---
+        if (!isMounted) return;
+        await new Promise(r => setTimeout(r, 600));
+        if (!isMounted) return;
+        if (goToStepRef.current) {
+          const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(1) : 2;
+          goToStepRef.current(next);
+        }
+
       } finally {
         if (setHrModalRef.current) setHrModalRef.current(null);
         setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
@@ -182,11 +210,11 @@ export function useFakeMouseAutoPlay({
       if (setHrModalRef.current) setHrModalRef.current(null);
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
     };
-  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep]);
+  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep, speedFactor]);
 
   // 2. Autoplay para Normas HSEQ (Paso 3)
   useEffect(() => {
-    if (currentStep !== 3 || transitioningToStep !== null || !isTVMode || isLivePreview) {
+    if (currentStep !== 3 || transitioningToStep !== null || !isTVMode || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
       if (setHseqModalRef.current) setHseqModalRef.current(null);
       return;
@@ -197,7 +225,7 @@ export function useFakeMouseAutoPlay({
     const runHseqSequence = async () => {
       try {
         // Esperar que la animación de entrada se complete
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, Math.round(1000 * speedFactor)));
         if (!isMounted) return;
 
         // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha
@@ -211,6 +239,12 @@ export function useFakeMouseAutoPlay({
 
         if (allCards.length === 0) {
           setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
+          await new Promise(r => setTimeout(r, 1200));
+          if (!isMounted) return;
+          if (goToStepRef.current) {
+            const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(3) : 4;
+            goToStepRef.current(next);
+          }
           return;
         }
 
@@ -223,14 +257,14 @@ export function useFakeMouseAutoPlay({
             const targetX = rect.left + rect.width / 2;
             const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-            // 1. Mover cursor hacia la tarjeta de izquierda a derecha
+            // 1. Mover cursor hacia la tarjeta
             setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
-            await new Promise(r => setTimeout(r, 900));
+            await new Promise(r => setTimeout(r, Math.round(650 * speedFactor)));
             if (!isMounted) return;
 
             // 2. Efecto de Clic
             setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-            await new Promise(r => setTimeout(r, 220));
+            await new Promise(r => setTimeout(r, 180));
             if (!isMounted) return;
             setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
@@ -243,19 +277,29 @@ export function useFakeMouseAutoPlay({
             }
 
             // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (!isMounted) return;
 
             const modalEl = document.getElementById('hseq-modal-content');
-            await autoScrollModalContent(modalEl);
+            await autoScrollModalContent(modalEl, speedFactor);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setHseqModalRef.current) setHseqModalRef.current(null);
-            await new Promise(r => setTimeout(r, 700));
+            await new Promise(r => setTimeout(r, Math.round(500 * speedFactor)));
             if (!isMounted) return;
           }
         }
+
+        // --- SOLO CUANDO TERMINA DE VERSE LA ÚLTIMA TARJETA Y SU MODAL ---
+        if (!isMounted) return;
+        await new Promise(r => setTimeout(r, 600));
+        if (!isMounted) return;
+        if (goToStepRef.current) {
+          const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(3) : 4;
+          goToStepRef.current(next);
+        }
+
       } finally {
         if (setHseqModalRef.current) setHseqModalRef.current(null);
         setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
@@ -269,11 +313,11 @@ export function useFakeMouseAutoPlay({
       if (setHseqModalRef.current) setHseqModalRef.current(null);
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
     };
-  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep]);
+  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep, speedFactor]);
 
   // 3. Autoplay para Convenios Compensar (Paso 6)
   useEffect(() => {
-    if (currentStep !== 6 || transitioningToStep !== null || !isTVMode || isLivePreview) {
+    if (currentStep !== 6 || transitioningToStep !== null || !isTVMode || isLivePreview || (overrideStep !== null && overrideStep !== undefined)) {
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
       if (setConvenioModalRef.current) setConvenioModalRef.current(null);
       return;
@@ -284,7 +328,7 @@ export function useFakeMouseAutoPlay({
     const runConveniosSequence = async () => {
       try {
         // Esperar que la animación de entrada se complete
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, Math.round(1000 * speedFactor)));
         if (!isMounted) return;
 
         // Obtener las tarjetas renderizadas y ordenarlas estrictamente de izquierda a derecha (y arriba hacia abajo)
@@ -298,6 +342,12 @@ export function useFakeMouseAutoPlay({
 
         if (allCards.length === 0) {
           setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
+          await new Promise(r => setTimeout(r, 1200));
+          if (!isMounted) return;
+          if (goToStepRef.current) {
+            const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(6) : 0;
+            goToStepRef.current(next);
+          }
           return;
         }
 
@@ -310,14 +360,14 @@ export function useFakeMouseAutoPlay({
             const targetX = rect.left + rect.width / 2;
             const targetY = rect.top + Math.min(rect.height / 2, 220);
 
-            // 1. Mover cursor hacia la tarjeta de izquierda a derecha
+            // 1. Mover cursor hacia la tarjeta
             setFakeMouse({ x: targetX, y: targetY, visible: true, clicking: false, ripple: false });
-            await new Promise(r => setTimeout(r, 900));
+            await new Promise(r => setTimeout(r, Math.round(650 * speedFactor)));
             if (!isMounted) return;
 
             // 2. Efecto de Clic
             setFakeMouse(prev => ({ ...prev, clicking: true, ripple: true }));
-            await new Promise(r => setTimeout(r, 220));
+            await new Promise(r => setTimeout(r, 180));
             if (!isMounted) return;
             setFakeMouse(prev => ({ ...prev, clicking: false, ripple: false }));
 
@@ -330,19 +380,29 @@ export function useFakeMouseAutoPlay({
             }
 
             // Esperar que el modal monte y ejecute el scroll automático hasta visualizar la imagen completa
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (!isMounted) return;
 
             const modalEl = document.getElementById('convenio-modal-content');
-            await autoScrollModalContent(modalEl);
+            await autoScrollModalContent(modalEl, speedFactor);
             if (!isMounted) return;
 
             // 4. Cerrar Modal
             if (setConvenioModalRef.current) setConvenioModalRef.current(null);
-            await new Promise(r => setTimeout(r, 700));
+            await new Promise(r => setTimeout(r, Math.round(500 * speedFactor)));
             if (!isMounted) return;
           }
         }
+
+        // --- SOLO CUANDO TERMINA DE VERSE LA ÚLTIMA TARJETA Y SU MODAL ---
+        if (!isMounted) return;
+        await new Promise(r => setTimeout(r, 600));
+        if (!isMounted) return;
+        if (goToStepRef.current) {
+          const next = getNextAvailableStepRef.current ? getNextAvailableStepRef.current(6) : 0;
+          goToStepRef.current(next);
+        }
+
       } finally {
         if (setConvenioModalRef.current) setConvenioModalRef.current(null);
         setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
@@ -356,7 +416,7 @@ export function useFakeMouseAutoPlay({
       if (setConvenioModalRef.current) setConvenioModalRef.current(null);
       setFakeMouse(prev => ({ ...prev, visible: false, clicking: false, ripple: false }));
     };
-  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep]);
+  }, [currentStep, transitioningToStep, isTVMode, isLivePreview, overrideStep, speedFactor]);
 
   return {
     fakeMouse,
